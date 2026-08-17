@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { GroqNotConfiguredError, GroqRateLimitError } from "@/lib/groq";
 import { recommend } from "@/lib/recommend";
+import { resolveUserId } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,8 +21,9 @@ export async function POST(request: Request) {
   }
 
   try {
+    const userId = await resolveUserId();
     const db = await getDb();
-    const result = await recommend(db, parsed.data);
+    const result = await recommend(db, userId, parsed.data);
     if (!result) {
       return NextResponse.json({ error: "No merchant matched that name." }, { status: 404 });
     }
@@ -40,6 +42,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: err.message }, { status: 429 });
     }
     console.error("recommend failed", err);
-    return NextResponse.json({ error: "Could not work out a recommendation." }, { status: 500 });
+    return NextResponse.json({ error: "Could not compare cards for that place." }, { status: 500 });
   }
 }

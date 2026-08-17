@@ -20,18 +20,48 @@ import {
  * multiplied by its currency's cents-per-point.
  */
 
+export const users = pgTable(
+  "users",
+  {
+    id: serial("id").primaryKey(),
+    email: text("email").notNull(),
+    /** scrypt$… string from lib/password.ts. */
+    passwordHash: text("password_hash").notNull(),
+    isAdmin: boolean("is_admin").notNull().default(false),
+    /** Set when an admin creates the account; cleared after first password change. */
+    mustChangePassword: boolean("must_change_password").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("users_email_key").on(t.email)],
+);
+
 export const pointCurrencies = pgTable("point_currencies", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
   name: text("name").notNull(),
   /** Cents each point is worth at a plain cash redemption. */
   defaultCpp: numeric("default_cpp", { precision: 6, scale: 3, mode: "number" }).notNull(),
-  /** Your own valuation, which overrides the default when set. */
-  userCpp: numeric("user_cpp", { precision: 6, scale: 3, mode: "number" }),
   /** Cashback currencies can't be transferred, so the ceiling is the default. */
   isCashback: boolean("is_cashback").notNull().default(false),
   notes: text("notes"),
 });
+
+/** Per-user override of a currency's cents-per-point. */
+export const userCurrencyValuations = pgTable(
+  "user_currency_valuations",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    currencyId: integer("currency_id")
+      .notNull()
+      .references(() => pointCurrencies.id, { onDelete: "cascade" }),
+    cpp: numeric("cpp", { precision: 6, scale: 3, mode: "number" }).notNull(),
+  },
+  (t) => [uniqueIndex("user_currency_valuations_user_currency_key").on(t.userId, t.currencyId)],
+);
 
 export const cards = pgTable("cards", {
   id: serial("id").primaryKey(),
@@ -96,6 +126,9 @@ export const userCards = pgTable(
   "user_cards",
   {
     id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     cardId: integer("card_id")
       .notNull()
       .references(() => cards.id, { onDelete: "cascade" }),
@@ -108,7 +141,7 @@ export const userCards = pgTable(
     selections: jsonb("selections").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("user_cards_card_id_key").on(t.cardId)],
+  (t) => [uniqueIndex("user_cards_user_card_key").on(t.userId, t.cardId)],
 );
 
 export const subProgress = pgTable(
@@ -177,6 +210,26 @@ export const transactions = pgTable(
   ],
 );
 
+export const usersRelations = relations(users, ({ many }) => ({
+  cards: many(userCards),
+  valuations: many(userCurrencyValuations),
+}));
+
+export const pointCurrenciesRelations = relations(pointCurrencies, ({ many }) => ({
+  valuations: many(userCurrencyValuations),
+}));
+
+export const userCurrencyValuationsRelations = relations(userCurrencyValuations, ({ one }) => ({
+  user: one(users, {
+    fields: [userCurrencyValuations.userId],
+    references: [users.id],
+  }),
+  currency: one(pointCurrencies, {
+    fields: [userCurrencyValuations.currencyId],
+    references: [pointCurrencies.id],
+  }),
+}));
+
 export const cardsRelations = relations(cards, ({ one, many }) => ({
   currency: one(pointCurrencies, {
     fields: [cards.currencyId],
@@ -190,6 +243,7 @@ export const earnRulesRelations = relations(earnRules, ({ one }) => ({
 }));
 
 export const userCardsRelations = relations(userCards, ({ one, many }) => ({
+  user: one(users, { fields: [userCards.userId], references: [users.id] }),
   card: one(cards, { fields: [userCards.cardId], references: [cards.id] }),
   sub: one(subProgress),
   transactions: many(transactions),
@@ -213,7 +267,9 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   }),
 }));
 
+export type User = typeof users.$inferSelect;
 export type PointCurrency = typeof pointCurrencies.$inferSelect;
+export type UserCurrencyValuation = typeof userCurrencyValuations.$inferSelect;
 export type Card = typeof cards.$inferSelect;
 export type EarnRule = typeof earnRules.$inferSelect;
 export type UserCard = typeof userCards.$inferSelect;

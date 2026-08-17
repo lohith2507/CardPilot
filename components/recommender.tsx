@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, Globe, Info, Loader2, Search, Sparkles, WifiOff } from "lucide-react";
+import { AlertTriangle, Check, Globe, Loader2, Search } from "lucide-react";
 import { CardFace, CardSliver, CardSwatch } from "@/components/card-face";
+import { MerchantOverview, MerchantOverviewSkeleton } from "@/components/merchant-overview";
 import { Receipt, ReceiptNote, ReceiptRow } from "@/components/receipt";
 import { Button, Eyebrow, Input, Panel, Pill } from "@/components/ui";
 import type { CardScore } from "@/lib/engine/types";
-import { readSnapshot, recommendOffline, refreshSnapshot } from "@/lib/offline";
+import { readSnapshot, recommendOffline, refreshSnapshot, rerankLocal } from "@/lib/offline";
 import type { RecommendResult } from "@/lib/recommend";
 import { cn, formatCents, formatPct } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ export type MerchantChip = {
   mcc: number;
   mccLabel: string;
   category: string;
+  lookedUp?: boolean;
 };
 
 type Suggestion = MerchantChip;
@@ -35,8 +37,10 @@ export function Recommender({
   const [amount, setAmount] = useState("25");
   const [isForeign, setIsForeign] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [result, setResult] = useState<RecommendResult | null>(null);
+  const [lastQuery, setLastQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,7 +52,12 @@ export function Recommender({
   const visibleSuggestions = suggestionsOpen ? suggestions : [];
 
   useEffect(() => {
-    if (!suggestionsOpen) return;
+    if (!suggestionsOpen) {
+      setSuggestLoading(false);
+      return;
+    }
+
+    setSuggestLoading(true);
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
@@ -57,19 +66,21 @@ export function Recommender({
         });
         if (!res.ok) return;
         const data = (await res.json()) as { merchants: Suggestion[] };
-        setSuggestions(data.merchants);
+        if (!controller.signal.aborted) setSuggestions(data.merchants);
       } catch {
         // Aborted by the next keystroke.
+      } finally {
+        if (!controller.signal.aborted) setSuggestLoading(false);
       }
-    }, 170);
+    }, 150);
 
     return () => {
       controller.abort();
       clearTimeout(timer);
+      setSuggestLoading(false);
     };
   }, [query, suggestionsOpen]);
 
-  // Kept current so a dead network still has something to rank against.
   useEffect(() => {
     void refreshSnapshot();
   }, []);
@@ -80,6 +91,7 @@ export function Recommender({
       if (!term) return;
 
       const id = ++requestId.current;
+      setLastQuery(term);
       setLoading(true);
       setError(null);
       setShowSuggestions(false);
@@ -122,15 +134,12 @@ export function Recommender({
     [],
   );
 
-  // Keep the ranking honest when the amount or location changes after a search.
+  // Amount and abroad toggle re-rank instantly in the browser — no second web lookup.
   useEffect(() => {
-    if (!result) return;
-    const timer = setTimeout(() => {
-      void run(result.merchant.name, amountCents, isForeign);
-    }, 350);
-    return () => clearTimeout(timer);
-    // Re-running on result would loop; the merchant name is read from the latest result.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setResult((prev) => {
+      if (!prev) return prev;
+      return rerankLocal(prev, amountCents, isForeign) ?? prev;
+    });
   }, [amountCents, isForeign]);
 
   const onLogged = useCallback(() => {
@@ -139,16 +148,26 @@ export function Recommender({
   }, [result, amountCents, isForeign, run, router]);
 
   const chips = recents.length > 0 ? recents : [];
+  const hasResult = Boolean(result) || loading;
 
   return (
-    <div className="space-y-6">
-      <header>
-        <Eyebrow>CardPilot</Eyebrow>
-        <h1 className="mt-1.5 text-3xl font-bold tracking-tight">Compare at a purchase</h1>
-        <p className="mt-2.5 text-sm leading-relaxed text-muted">
-          Ranks only the cards in your wallet, using the earn rules you saved. Estimates — not
-          advice. Confirm rates with your issuer when it matters.
-        </p>
+    <div className="space-y-7">
+      <header className={cn(hasResult ? "space-y-1" : "space-y-3 pb-2 text-center")}>
+        <Eyebrow className={hasResult ? undefined : "justify-center"}>CardPilot</Eyebrow>
+        <h1
+          className={cn(
+            "font-bold tracking-tight text-ink",
+            hasResult ? "text-2xl" : "text-[1.75rem] leading-tight sm:text-3xl",
+          )}
+        >
+          {hasResult ? "Compare at a purchase" : "Which card here?"}
+        </h1>
+        {!hasResult ? (
+          <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted">
+            Search any place — we look it up, explain what it is, then rank cards in your wallet
+            by the rules you saved.
+          </p>
+        ) : null}
       </header>
 
       <form
@@ -160,8 +179,8 @@ export function Recommender({
       >
         <div className="relative">
           <Search
-            size={18}
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+            size={20}
+            className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-muted"
             aria-hidden
           />
           <Input
@@ -172,22 +191,32 @@ export function Recommender({
               setShowSuggestions(true);
             }}
             onFocus={() => setShowSuggestions(true)}
-            placeholder="McDonald's, Costco gas, Delta…"
+            placeholder="Desi Adda, Mayuri, Costco gas…"
             aria-label="Merchant or place"
             autoComplete="off"
             enterKeyHint="search"
-            className="py-4 pl-11 pr-11 text-base"
+            className={cn(
+              "border-line/80 py-4 pl-12 pr-12 text-base shadow-card transition-shadow focus:shadow-lifted",
+              hasResult ? "rounded-xl" : "rounded-2xl",
+              loading && "animate-search-pulse border-brand/40 ring-2 ring-brand/20",
+            )}
           />
           {loading ? (
             <Loader2
-              size={18}
-              className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-brand"
-              aria-label="Comparing cards"
+              size={20}
+              className="absolute right-5 top-1/2 -translate-y-1/2 animate-spin text-brand"
+              aria-label="Looking up merchant"
             />
           ) : null}
 
-          {visibleSuggestions.length > 0 ? (
-            <ul className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-line bg-surface shadow-lifted">
+          {visibleSuggestions.length > 0 || suggestLoading ? (
+            <ul className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-line bg-surface shadow-lifted">
+              {suggestLoading ? (
+                <li className="flex items-center gap-2.5 px-4 py-3.5 text-sm text-muted">
+                  <Loader2 size={16} className="animate-spin text-brand" aria-hidden />
+                  Searching…
+                </li>
+              ) : null}
               {visibleSuggestions.map((m) => (
                 <li key={m.id}>
                   <button
@@ -197,10 +226,11 @@ export function Recommender({
                       setQuery(m.name);
                       void run(m.name, amountCents, isForeign);
                     }}
-                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-raised"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-raised"
                   >
                     <span className="text-sm font-medium text-ink">{m.name}</span>
                     <span className="numeral text-[11px] text-muted">
+                      {m.lookedUp ? "Looked up · " : ""}
                       {m.mcc} · {m.mccLabel}
                     </span>
                   </button>
@@ -213,7 +243,7 @@ export function Recommender({
         <div className="flex items-center gap-3">
           <label className="relative flex-1">
             <span className="sr-only">Purchase amount</span>
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-muted">
               $
             </span>
             <Input
@@ -221,7 +251,7 @@ export function Recommender({
               onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
               inputMode="decimal"
               placeholder="25"
-              className="numeral py-3 pl-8 text-sm"
+              className="numeral rounded-xl py-3 pl-8 text-sm shadow-card"
             />
           </label>
 
@@ -230,7 +260,7 @@ export function Recommender({
             onClick={() => setIsForeign((v) => !v)}
             aria-pressed={isForeign}
             className={cn(
-              "flex items-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold transition-colors",
+              "flex items-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold shadow-card transition-colors",
               isForeign
                 ? "border-brand/30 bg-brand-soft text-brand-deep"
                 : "border-line bg-surface text-muted hover:text-ink",
@@ -242,10 +272,12 @@ export function Recommender({
         </div>
       </form>
 
-      {!result && !error && chips.length > 0 ? (
+      {loading && lastQuery ? <SearchProgress query={lastQuery} /> : null}
+
+      {!loading && !result && !error && chips.length > 0 ? (
         <section>
           <Eyebrow>{recents.length > 0 ? "Recent" : "Try one"}</Eyebrow>
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
             {chips.map((m) => (
               <button
                 key={m.id}
@@ -254,7 +286,7 @@ export function Recommender({
                   setQuery(m.name);
                   void run(m.name, amountCents, isForeign);
                 }}
-                className="rounded-full border border-line bg-surface px-3.5 py-2 text-sm font-medium text-ink shadow-card transition-colors hover:border-brand/40 hover:text-brand"
+                className="rounded-full border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink shadow-card transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:text-brand hover:shadow-lifted"
               >
                 {m.name}
               </button>
@@ -263,8 +295,8 @@ export function Recommender({
         </section>
       ) : null}
 
-      {walletCount === 0 ? (
-        <Panel className="space-y-3 border-brand/20 bg-brand-soft">
+      {walletCount === 0 && !hasResult ? (
+        <Panel className="space-y-3 border-brand/20 bg-brand-soft/70">
           <p className="text-sm leading-relaxed text-ink">
             Your wallet is empty, so there is nothing to compare. Add the cards you carry — then
             rankings use only those rules.
@@ -278,68 +310,141 @@ export function Recommender({
         </Panel>
       ) : null}
 
-      {error ? (
+      {loading ? (
+        <div className="space-y-6">
+          <MerchantOverviewSkeleton query={lastQuery} />
+          <div className="space-y-3 pt-2">
+            <div className="h-4 w-40 animate-pulse rounded bg-line/60" />
+            <div className="h-44 animate-pulse rounded-2xl bg-line/50" />
+          </div>
+        </div>
+      ) : null}
+
+      {error && !loading ? (
         <Panel className="border-rose/20 bg-rose-soft">
           <p className="text-sm text-ink">{error}</p>
         </Panel>
       ) : null}
 
-      {result ? <Result result={result} onLogged={onLogged} /> : null}
+      {result && !loading ? (
+        <Result result={result} query={lastQuery} onLogged={onLogged} walletCount={walletCount} />
+      ) : null}
     </div>
   );
 }
 
-function Result({ result, onLogged }: { result: RecommendResult; onLogged: () => void }) {
+function SearchProgress({ query }: { query: string }) {
+  return (
+    <div
+      className="overflow-hidden rounded-xl border border-brand/25 bg-brand-soft/50 animate-slide-up"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-3 px-4 py-3.5">
+        <Loader2 size={20} className="shrink-0 animate-spin text-brand" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-ink">Looking up {query}</p>
+          <p className="text-xs text-muted">Searching the web, then ranking cards in your wallet…</p>
+        </div>
+      </div>
+      <div className="h-1 overflow-hidden bg-brand/10">
+        <div className="h-full w-2/5 rounded-full bg-brand animate-progress-slide" />
+      </div>
+    </div>
+  );
+}
+
+function Result({
+  result,
+  query,
+  onLogged,
+  walletCount,
+}: {
+  result: RecommendResult;
+  query: string;
+  onLogged: () => void;
+  walletCount: number;
+}) {
   const eligible = result.scores.filter((s) => s.eligible);
   const winner = eligible[0];
   const runnersUp = result.scores.slice(1);
 
+  if (walletCount === 0) {
+    return (
+      <div className="space-y-6 animate-slide-up">
+        <MerchantOverview result={result} query={query} />
+        <Panel className="space-y-3 border-brand/20 bg-brand-soft/70">
+          <p className="text-sm leading-relaxed text-ink">
+            We found this place, but your wallet is empty — add cards to see which one earns the
+            most here.
+          </p>
+          <Link
+            href="/cards/add"
+            className="inline-flex rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-deep"
+          >
+            Add a card
+          </Link>
+        </Panel>
+      </div>
+    );
+  }
+
   if (!winner) {
     return (
-      <Panel className="border-rose/20 bg-rose-soft">
-        <p className="text-sm text-ink">
-          None of the cards in your wallet look usable at {result.merchant.name}
-          {result.merchant.networkExclusions.length > 0
-            ? ` — it typically refuses ${result.merchant.networkExclusions.join(", ")}`
-            : ""}
-          .
-        </p>
-      </Panel>
+      <div className="space-y-6 animate-slide-up">
+        <MerchantOverview result={result} query={query} />
+        <Panel className="border-rose/20 bg-rose-soft">
+          <p className="text-sm text-ink">
+            None of the cards in your wallet look usable at {result.merchant.name}
+            {result.merchant.networkExclusions.length > 0
+              ? ` — it typically refuses ${result.merchant.networkExclusions.join(", ")}`
+              : ""}
+            .
+          </p>
+        </Panel>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-slide-up">
-      <MerchantStrip result={result} />
+    <div className="space-y-7 animate-slide-up">
+      <MerchantOverview result={result} query={query} />
 
-      <section className="relative pt-6">
-        <Eyebrow className="mb-3">Highest estimate in your wallet</Eyebrow>
-        {runnersUp.slice(0, 2).map((s, i) => (
-          <CardSliver
-            key={s.userCardId}
-            colorFrom={s.card.colorFrom}
-            colorTo={s.card.colorTo}
-            style={{
-              transform: `rotate(${i === 0 ? -4.5 : 4}deg) translateY(${-10 - i * 9}px) scale(${0.965 - i * 0.045})`,
-              zIndex: -i - 1,
-            }}
+      <section className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-line" />
+          <Eyebrow className="shrink-0">Card for this purchase</Eyebrow>
+          <div className="h-px flex-1 bg-line" />
+        </div>
+
+        <div className="relative pt-2">
+          <Eyebrow className="mb-3">Highest estimate in your wallet</Eyebrow>
+          {runnersUp.slice(0, 2).map((s, i) => (
+            <CardSliver
+              key={s.userCardId}
+              colorFrom={s.card.colorFrom}
+              colorTo={s.card.colorTo}
+              style={{
+                transform: `rotate(${i === 0 ? -4.5 : 4}deg) translateY(${-10 - i * 9}px) scale(${0.965 - i * 0.045})`,
+                zIndex: -i - 1,
+              }}
+            />
+          ))}
+          <CardFace
+            issuer={winner.card.issuer}
+            product={winner.card.product}
+            network={winner.card.network}
+            colorFrom={winner.card.colorFrom}
+            colorTo={winner.card.colorTo}
+            headline={formatPct(winner.effectiveRatePct)}
+            headlineLabel={`About ${formatCents(Math.round(winner.totalValueCents))} on ${formatCents(result.amountCents)}`}
+            className="relative z-10 animate-card-lift"
           />
-        ))}
-        <CardFace
-          issuer={winner.card.issuer}
-          product={winner.card.product}
-          network={winner.card.network}
-          colorFrom={winner.card.colorFrom}
-          colorTo={winner.card.colorTo}
-          headline={formatPct(winner.effectiveRatePct)}
-          headlineLabel={`About ${formatCents(Math.round(winner.totalValueCents))} on ${formatCents(result.amountCents)}`}
-          className="relative z-10 animate-card-lift"
-        />
+        </div>
       </section>
 
       <MathPanel score={winner} amountCents={result.amountCents} />
 
-      {/* Remounts per merchant and amount so the confirmed state never lingers. */}
       <LogButton
         key={`${result.merchant.id}-${result.amountCents}`}
         result={result}
@@ -362,49 +467,6 @@ function Result({ result, onLogged }: { result: RecommendResult; onLogged: () =>
         Not financial advice. Figures follow the rules and point values saved in Settings.
       </p>
     </div>
-  );
-}
-
-function MerchantStrip({ result }: { result: RecommendResult }) {
-  const { merchant, resolvedBy } = result;
-  return (
-    <section className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-xl font-bold">{merchant.name}</h2>
-        <Pill>
-          {merchant.mcc} · {merchant.mccLabel}
-        </Pill>
-        {resolvedBy === "ai" ? (
-          <Pill tone="brand">
-            <Sparkles size={11} aria-hidden />
-            Category estimated
-          </Pill>
-        ) : null}
-        {result.offline ? (
-          <Pill tone="rose">
-            <WifiOff size={11} aria-hidden />
-            Offline
-          </Pill>
-        ) : null}
-      </div>
-
-      {merchant.codingNote ? (
-        <div className="flex gap-2.5 rounded-xl border border-line bg-surface p-3.5 shadow-card">
-          <Info size={16} className="mt-0.5 shrink-0 text-brand" aria-hidden />
-          <p className="text-xs leading-relaxed text-muted">{merchant.codingNote}</p>
-        </div>
-      ) : null}
-
-      {resolvedBy === "ai" && !merchant.codingNote ? (
-        <div className="flex gap-2.5 rounded-xl border border-line bg-surface p-3.5 shadow-card">
-          <Info size={16} className="mt-0.5 shrink-0 text-brand" aria-hidden />
-          <p className="text-xs leading-relaxed text-muted">
-            Merchant category was estimated from the name. If the MCC looks wrong, the ranking will
-            be wrong — check how the purchase usually codes.
-          </p>
-        </div>
-      ) : null}
-    </section>
   );
 }
 

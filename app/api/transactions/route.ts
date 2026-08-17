@@ -1,7 +1,9 @@
+import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb } from "@/db";
 import * as s from "@/db/schema";
+import { resolveUserId } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +23,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid request." }, { status: 400 });
   }
 
+  const userId = await resolveUserId();
   const db = await getDb();
+  const [owned] = await db
+    .select({ id: s.userCards.id })
+    .from(s.userCards)
+    .where(and(eq(s.userCards.id, parsed.data.userCardId), eq(s.userCards.userId, userId)))
+    .limit(1);
+  if (!owned) {
+    return NextResponse.json({ error: "That card is not in your wallet." }, { status: 403 });
+  }
+
   const [inserted] = await db
     .insert(s.transactions)
     .values({ ...parsed.data, occurredAt: new Date() })

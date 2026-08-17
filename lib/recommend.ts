@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, and } from "drizzle-orm";
 import type { Db } from "@/db";
 import * as s from "@/db/schema";
 import { rankWallet } from "@/lib/engine/score";
@@ -24,6 +24,9 @@ export type RecommendResult = {
     category: string;
     codingNote: string | null;
     networkExclusions: string[];
+    summary: string;
+    highlight: string;
+    sources: string[];
   };
   resolvedBy: "cache" | "ai";
   amountCents: number;
@@ -33,13 +36,17 @@ export type RecommendResult = {
   offline?: boolean;
 };
 
-export async function recommend(db: Db, input: RecommendInput): Promise<RecommendResult | null> {
+export async function recommend(
+  db: Db,
+  userId: number,
+  input: RecommendInput,
+): Promise<RecommendResult | null> {
   const at = input.at ?? new Date();
   const resolved = await resolveMerchant(db, input.query);
   if (!resolved) return null;
 
   const { merchant } = resolved;
-  const wallet = await loadWallet(db, at);
+  const wallet = await loadWallet(db, userId, at);
 
   const ctx: PurchaseContext = {
     mcc: merchant.mcc,
@@ -61,6 +68,9 @@ export async function recommend(db: Db, input: RecommendInput): Promise<Recommen
       category: merchant.category,
       codingNote: merchant.codingNote,
       networkExclusions: merchant.networkExclusions,
+      summary: resolved.summary,
+      highlight: resolved.highlight,
+      sources: resolved.sources,
     },
     resolvedBy: resolved.source,
     amountCents: input.amountCents,
@@ -69,11 +79,13 @@ export async function recommend(db: Db, input: RecommendInput): Promise<Recommen
   };
 }
 
-/** Merchants you've actually paid at recently, newest first. */
-export async function recentMerchants(db: Db, limit = 6): Promise<s.Merchant[]> {
+/** Merchants this user has actually paid at recently, newest first. */
+export async function recentMerchants(db: Db, userId: number, limit = 6): Promise<s.Merchant[]> {
   const recent = await db
     .select({ merchantId: s.transactions.merchantId })
     .from(s.transactions)
+    .innerJoin(s.userCards, eq(s.transactions.userCardId, s.userCards.id))
+    .where(eq(s.userCards.userId, userId))
     .orderBy(desc(s.transactions.occurredAt))
     .limit(60);
 
@@ -95,10 +107,10 @@ export async function starterMerchants(db: Db): Promise<s.Merchant[]> {
   return slugs.map((slug) => found.find((m) => m.slug === slug)!).filter(Boolean);
 }
 
-export async function countWallet(db: Db): Promise<number> {
+export async function countWallet(db: Db, userId: number): Promise<number> {
   const rows = await db
     .select({ id: s.userCards.id })
     .from(s.userCards)
-    .where(eq(s.userCards.active, true));
+    .where(and(eq(s.userCards.active, true), eq(s.userCards.userId, userId)));
   return rows.length;
 }

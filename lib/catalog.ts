@@ -6,7 +6,7 @@ import type { CapPeriod } from "@/lib/engine/types";
 
 export type CatalogEntry = {
   card: s.Card;
-  currency: s.PointCurrency;
+  currency: s.PointCurrency & { userCpp: number | null };
   rules: s.EarnRule[];
   userCardId: number | null;
   inWallet: boolean;
@@ -17,13 +17,18 @@ export type CatalogEntry = {
   sub: s.SubProgress | null;
 };
 
-/** Every card the app knows about, annotated with whether you carry it. */
-export async function loadCatalog(db: Db, at: Date = new Date()): Promise<CatalogEntry[]> {
-  const [cardRows, currencies, rules, userCardRows, subs] = await Promise.all([
+/** Every card the app knows about, annotated with whether this user carries it. */
+export async function loadCatalog(
+  db: Db,
+  userId: number,
+  at: Date = new Date(),
+): Promise<CatalogEntry[]> {
+  const [cardRows, currencies, valuations, rules, userCardRows, subs] = await Promise.all([
     db.select().from(s.cards).orderBy(asc(s.cards.issuer), asc(s.cards.product)),
     db.select().from(s.pointCurrencies),
+    db.select().from(s.userCurrencyValuations).where(eq(s.userCurrencyValuations.userId, userId)),
     db.select().from(s.earnRules).orderBy(asc(s.earnRules.id)),
-    db.select().from(s.userCards),
+    db.select().from(s.userCards).where(eq(s.userCards.userId, userId)),
     db.select().from(s.subProgress),
   ]);
 
@@ -42,6 +47,7 @@ export async function loadCatalog(db: Db, at: Date = new Date()): Promise<Catalo
       : [];
 
   const currencyById = new Map(currencies.map((c) => [c.id, c]));
+  const cppByCurrencyId = new Map(valuations.map((v) => [v.currencyId, v.cpp]));
   const userCardByCardId = new Map(userCardRows.map((u) => [u.cardId, u]));
   const subByUserCardId = new Map(subs.map((x) => [x.userCardId, x]));
 
@@ -49,6 +55,7 @@ export async function loadCatalog(db: Db, at: Date = new Date()): Promise<Catalo
     const cardRules = rules.filter((r) => r.cardId === card.id);
     const userCard = userCardByCardId.get(card.id) ?? null;
     const txns = userCard ? ledger.filter((t) => t.userCardId === userCard.id) : [];
+    const baseCurrency = currencyById.get(card.currencyId)!;
 
     const capUsedCents: Record<number, number> = {};
     for (const rule of cardRules) {
@@ -65,7 +72,10 @@ export async function loadCatalog(db: Db, at: Date = new Date()): Promise<Catalo
 
     return {
       card,
-      currency: currencyById.get(card.currencyId)!,
+      currency: {
+        ...baseCurrency,
+        userCpp: cppByCurrencyId.get(card.currencyId) ?? null,
+      },
       rules: cardRules,
       userCardId: userCard?.id ?? null,
       inWallet: Boolean(userCard?.active),
@@ -77,7 +87,7 @@ export async function loadCatalog(db: Db, at: Date = new Date()): Promise<Catalo
   });
 }
 
-export async function loadTransactions(db: Db, limit = 30) {
+export async function loadTransactions(db: Db, userId: number, limit = 30) {
   return db
     .select({
       id: s.transactions.id,
@@ -93,6 +103,20 @@ export async function loadTransactions(db: Db, limit = 30) {
     .from(s.transactions)
     .innerJoin(s.userCards, eq(s.transactions.userCardId, s.userCards.id))
     .innerJoin(s.cards, eq(s.userCards.cardId, s.cards.id))
+    .where(eq(s.userCards.userId, userId))
     .orderBy(s.transactions.occurredAt)
     .limit(limit);
+}
+
+/** Currencies with this user's cpp override attached. */
+export async function loadCurrenciesForUser(db: Db, userId: number) {
+  const [currencies, valuations] = await Promise.all([
+    db.select().from(s.pointCurrencies).orderBy(asc(s.pointCurrencies.code)),
+    db.select().from(s.userCurrencyValuations).where(eq(s.userCurrencyValuations.userId, userId)),
+  ]);
+  const cppById = new Map(valuations.map((v) => [v.currencyId, v.cpp]));
+  return currencies.map((c) => ({
+    ...c,
+    userCpp: cppById.get(c.id) ?? null,
+  }));
 }

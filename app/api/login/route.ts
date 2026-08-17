@@ -1,25 +1,33 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { appPassword, authSecret, safeEqual, sessionCookie, signSession } from "@/lib/auth";
+import { authRequired, authSecret, sessionCookie, signSession } from "@/lib/auth";
+import { normalizeEmail, verifyPassword } from "@/lib/password";
+import { findUserByEmail, sessionFromUser } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const bodySchema = z.object({ password: z.string().min(1) });
+const bodySchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
 
 export async function POST(request: Request) {
-  const password = appPassword();
-  if (!password) {
-    return NextResponse.json({ error: "No password is configured." }, { status: 400 });
+  if (!authRequired()) {
+    return NextResponse.json(
+      { error: "Sign-in is off. Set AUTH_SECRET to enable accounts." },
+      { status: 400 },
+    );
   }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Enter your password." }, { status: 400 });
+    return NextResponse.json({ error: "Enter your email and password." }, { status: 400 });
   }
 
-  if (!safeEqual(parsed.data.password, password)) {
-    return NextResponse.json({ error: "That password is wrong." }, { status: 401 });
+  const user = await findUserByEmail(normalizeEmail(parsed.data.email));
+  if (!user || !(await verifyPassword(parsed.data.password, user.passwordHash))) {
+    return NextResponse.json({ error: "Email or password is wrong." }, { status: 401 });
   }
 
   const secret = authSecret();
@@ -27,7 +35,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Sessions cannot be signed. Set AUTH_SECRET." }, { status: 500 });
   }
 
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set(sessionCookie(await signSession({ via: "password" }, secret)));
+  const response = NextResponse.json({
+    ok: true,
+    mustChangePassword: user.mustChangePassword,
+  });
+  response.cookies.set(
+    sessionCookie(await signSession(sessionFromUser(user, "password"), secret)),
+  );
   return response;
 }

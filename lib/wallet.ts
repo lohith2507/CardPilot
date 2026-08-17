@@ -9,17 +9,29 @@ import type { CapPeriod, EngineRule, WalletEntry } from "@/lib/engine/types";
  * of each bonus cap is already spent. Cap windows are at most a calendar year,
  * so pulling this year's transactions is sufficient and keeps it to one query.
  */
-export async function loadWallet(db: Db, at: Date = new Date()): Promise<WalletEntry[]> {
+export async function loadWallet(
+  db: Db,
+  userId: number,
+  at: Date = new Date(),
+): Promise<WalletEntry[]> {
   const rows = await db
     .select({
       userCard: s.userCards,
       card: s.cards,
       currency: s.pointCurrencies,
+      valuation: s.userCurrencyValuations,
     })
     .from(s.userCards)
     .innerJoin(s.cards, eq(s.userCards.cardId, s.cards.id))
     .innerJoin(s.pointCurrencies, eq(s.cards.currencyId, s.pointCurrencies.id))
-    .where(eq(s.userCards.active, true));
+    .leftJoin(
+      s.userCurrencyValuations,
+      and(
+        eq(s.userCurrencyValuations.currencyId, s.pointCurrencies.id),
+        eq(s.userCurrencyValuations.userId, userId),
+      ),
+    )
+    .where(and(eq(s.userCards.active, true), eq(s.userCards.userId, userId)));
 
   if (rows.length === 0) return [];
 
@@ -49,7 +61,7 @@ export async function loadWallet(db: Db, at: Date = new Date()): Promise<WalletE
   const subByUserCard = new Map(subs.map((x) => [x.userCardId, x]));
   const ledgerByUserCard = groupBy(ledger, (t) => t.userCardId);
 
-  return rows.map(({ userCard, card, currency }) => {
+  return rows.map(({ userCard, card, currency, valuation }) => {
     const cardRules = (rulesByCard.get(card.id) ?? []).map(toEngineRule);
     const txns = ledgerByUserCard.get(userCard.id) ?? [];
 
@@ -100,7 +112,7 @@ export async function loadWallet(db: Db, at: Date = new Date()): Promise<WalletE
         code: currency.code,
         name: currency.name,
         defaultCpp: currency.defaultCpp,
-        userCpp: currency.userCpp,
+        userCpp: valuation?.cpp ?? null,
         isCashback: currency.isCashback,
       },
       rules: cardRules,

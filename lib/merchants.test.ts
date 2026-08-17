@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bestMatch, matchScore, normalizeQuery, type MatchableMerchant } from "./merchant-match";
+import { bestMatch, isPlausibleAlias, matchScore, normalizeQuery, type MatchableMerchant } from "./merchant-match";
 import { expandMccCodes, inferMccCodes, parseMccList } from "./mcc";
 
 function merchant(over: Partial<MatchableMerchant> = {}): MatchableMerchant {
@@ -44,6 +44,15 @@ describe("matchScore", () => {
 
   it("gives an unrelated merchant nothing", () => {
     expect(matchScore(merchant(), "delta air lines")).toBe(0);
+  });
+
+  it("does not treat an unrelated name as a hit just because letters overlap", () => {
+    const sw = merchant({ slug: "southwest", name: "Southwest Airlines", aliases: ["swagath"] });
+    expect(matchScore(sw, "swagath")).toBe(0);
+    expect(isPlausibleAlias("swagath", "Southwest Airlines")).toBe(false);
+    expect(isPlausibleAlias("mcd", "McDonald's")).toBe(true);
+    expect(isPlausibleAlias("mcdonald", "McDonald's")).toBe(true);
+    expect(isPlausibleAlias("mayuri", "May")).toBe(false);
   });
 
   it("matches multi-word names on token prefixes", () => {

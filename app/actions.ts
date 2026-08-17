@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import * as s from "@/db/schema";
 import type { ExtractedCard } from "@/lib/extract";
+import { resolveUserId } from "@/lib/session";
 
 function revalidateAll() {
   revalidatePath("/");
@@ -12,60 +13,113 @@ function revalidateAll() {
   revalidatePath("/settings");
 }
 
+async function ownedUserCard(userId: number, userCardId: number) {
+  const db = await getDb();
+  const [row] = await db
+    .select()
+    .from(s.userCards)
+    .where(and(eq(s.userCards.id, userCardId), eq(s.userCards.userId, userId)))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function addCardToWallet(cardId: number) {
+  const userId = await resolveUserId();
   const db = await getDb();
   const existing = await db
     .select()
     .from(s.userCards)
-    .where(eq(s.userCards.cardId, cardId))
+    .where(and(eq(s.userCards.cardId, cardId), eq(s.userCards.userId, userId)))
     .limit(1);
 
   if (existing.length > 0) {
     await db.update(s.userCards).set({ active: true }).where(eq(s.userCards.id, existing[0].id));
   } else {
-    await db.insert(s.userCards).values({ cardId, activations: {}, selections: {} });
+    await db.insert(s.userCards).values({
+      userId,
+      cardId,
+      activations: {},
+      selections: {},
+    });
   }
   revalidateAll();
 }
 
 export async function removeCardFromWallet(userCardId: number) {
+  const userId = await resolveUserId();
+  const row = await ownedUserCard(userId, userCardId);
+  if (!row) return;
   const db = await getDb();
   await db.update(s.userCards).set({ active: false }).where(eq(s.userCards.id, userCardId));
   revalidateAll();
 }
 
 export async function setActivation(userCardId: number, ruleId: number, on: boolean) {
-  const db = await getDb();
-  const [row] = await db.select().from(s.userCards).where(eq(s.userCards.id, userCardId)).limit(1);
+  const userId = await resolveUserId();
+  const row = await ownedUserCard(userId, userCardId);
   if (!row) return;
 
   const activations = { ...((row.activations ?? {}) as Record<string, boolean>) };
   if (on) activations[String(ruleId)] = true;
   else delete activations[String(ruleId)];
 
+  const db = await getDb();
   await db.update(s.userCards).set({ activations }).where(eq(s.userCards.id, userCardId));
   revalidateAll();
 }
 
 export async function setSelection(userCardId: number, group: string, ruleId: number | null) {
-  const db = await getDb();
-  const [row] = await db.select().from(s.userCards).where(eq(s.userCards.id, userCardId)).limit(1);
+  const userId = await resolveUserId();
+  const row = await ownedUserCard(userId, userCardId);
   if (!row) return;
 
   const selections = { ...((row.selections ?? {}) as Record<string, number>) };
   if (ruleId === null) delete selections[group];
   else selections[group] = ruleId;
 
+  const db = await getDb();
   await db.update(s.userCards).set({ selections }).where(eq(s.userCards.id, userCardId));
   revalidateAll();
 }
 
 export async function setUserCpp(currencyId: number, cpp: number | null) {
+  const userId = await resolveUserId();
   const db = await getDb();
-  await db
-    .update(s.pointCurrencies)
-    .set({ userCpp: cpp })
-    .where(eq(s.pointCurrencies.id, currencyId));
+
+  if (cpp === null) {
+    await db
+      .delete(s.userCurrencyValuations)
+      .where(
+        and(
+          eq(s.userCurrencyValuations.userId, userId),
+          eq(s.userCurrencyValuations.currencyId, currencyId),
+        ),
+      );
+  } else {
+    const existing = await db
+      .select()
+      .from(s.userCurrencyValuations)
+      .where(
+        and(
+          eq(s.userCurrencyValuations.userId, userId),
+          eq(s.userCurrencyValuations.currencyId, currencyId),
+        ),
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(s.userCurrencyValuations)
+        .set({ cpp })
+        .where(eq(s.userCurrencyValuations.id, existing[0].id));
+    } else {
+      await db.insert(s.userCurrencyValuations).values({
+        userId,
+        currencyId,
+        cpp,
+      });
+    }
+  }
   revalidateAll();
 }
 
@@ -77,6 +131,9 @@ export async function saveSignupBonus(input: {
   deadline: string;
   preloggedSpendCents: number;
 }) {
+  const userId = await resolveUserId();
+  if (!(await ownedUserCard(userId, input.userCardId))) return;
+
   const db = await getDb();
   const existing = await db
     .select()
@@ -93,19 +150,30 @@ export async function saveSignupBonus(input: {
 }
 
 export async function deleteSignupBonus(userCardId: number) {
+  const userId = await resolveUserId();
+  if (!(await ownedUserCard(userId, userCardId))) return;
   const db = await getDb();
   await db.delete(s.subProgress).where(eq(s.subProgress.userCardId, userCardId));
   revalidateAll();
 }
 
 export async function verifyRule(ruleId: number) {
+  await resolveUserId();
   const db = await getDb();
   await db.update(s.earnRules).set({ verifiedAt: new Date() }).where(eq(s.earnRules.id, ruleId));
   revalidateAll();
 }
 
 export async function deleteTransaction(id: number) {
+  const userId = await resolveUserId();
   const db = await getDb();
+  const [row] = await db
+    .select({ id: s.transactions.id })
+    .from(s.transactions)
+    .innerJoin(s.userCards, eq(s.transactions.userCardId, s.userCards.id))
+    .where(and(eq(s.transactions.id, id), eq(s.userCards.userId, userId)))
+    .limit(1);
+  if (!row) return;
   await db.delete(s.transactions).where(eq(s.transactions.id, id));
   revalidateAll();
 }
@@ -115,6 +183,7 @@ export async function deleteTransaction(id: number) {
  * rather than merging keeps the saved card identical to what you approved.
  */
 export async function saveExtractedCard(extracted: ExtractedCard, addToWallet: boolean) {
+  await resolveUserId();
   const db = await getDb();
 
   const currency = await resolveCurrency(db, extracted);
@@ -161,7 +230,6 @@ export async function saveExtractedCard(extracted: ExtractedCard, addToWallet: b
         validTo: r.validTo,
         priority: r.priority,
         sourceUrl: extracted.sourceUrl || null,
-        // You reviewed these before saving, so they count as verified.
         verifiedAt: new Date(),
         notes: r.notes || null,
       })),
@@ -191,7 +259,6 @@ async function resolveCurrency(
       code,
       name: extracted.currencyName || code,
       defaultCpp: extracted.currencyDefaultCpp,
-      userCpp: extracted.currencyDefaultCpp,
       isCashback: extracted.currencyIsCashback,
     })
     .returning();
@@ -199,6 +266,7 @@ async function resolveCurrency(
 }
 
 export async function findRuleByCardAndLabel(cardId: number, label: string) {
+  await resolveUserId();
   const db = await getDb();
   const [row] = await db
     .select()

@@ -1,9 +1,10 @@
-import { desc } from "drizzle-orm";
 import { getDb } from "@/db";
-import * as s from "@/db/schema";
 import { Account } from "@/components/account";
+import { AdminAccounts } from "@/components/admin-accounts";
 import { Settings, type CurrencyView, type SubView, type TxView } from "@/components/settings";
-import { loadCatalog, loadTransactions } from "@/lib/catalog";
+import { listUsersForAdmin } from "@/app/actions/users";
+import { loadCatalog, loadCurrenciesForUser, loadTransactions } from "@/lib/catalog";
+import { currentSession, resolveUserId } from "@/lib/session";
 import { loadWallet } from "@/lib/wallet";
 import { toCardView } from "@/lib/views";
 
@@ -11,12 +12,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
+  const userId = await resolveUserId();
+  const session = await currentSession();
   const db = await getDb();
   const [catalog, wallet, currencyRows, txRows] = await Promise.all([
-    loadCatalog(db),
-    loadWallet(db),
-    db.select().from(s.pointCurrencies).orderBy(desc(s.pointCurrencies.isCashback)),
-    loadTransactions(db),
+    loadCatalog(db, userId),
+    loadWallet(db, userId),
+    loadCurrenciesForUser(db, userId),
+    loadTransactions(db, userId),
   ]);
 
   const owned = catalog.filter((entry) => entry.inWallet);
@@ -60,6 +63,13 @@ export default async function SettingsPage() {
     colorTo: tx.colorTo,
   }));
 
+  const users = session?.isAdmin
+    ? (await listUsersForAdmin()).map((u) => ({
+        ...u,
+        createdAt: u.createdAt,
+      }))
+    : [];
+
   return (
     <div className="space-y-8">
       <Settings
@@ -68,6 +78,7 @@ export default async function SettingsPage() {
         subs={subs}
         transactions={transactions}
       />
+      {session?.isAdmin ? <AdminAccounts users={users} /> : null}
       <Account />
     </div>
   );

@@ -48,28 +48,25 @@ describe("configuration", () => {
     expect(googleConfig()).toEqual({ clientId: CLIENT_ID, clientSecret: "secret" });
   });
 
-  it("stays switched off until an allowlist exists", () => {
+  it("turns on once OAuth client credentials exist", () => {
     process.env.GOOGLE_CLIENT_ID = CLIENT_ID;
     process.env.GOOGLE_CLIENT_SECRET = "secret";
-    expect(googleEnabled()).toBe(false);
-
-    process.env.GOOGLE_ALLOWED_EMAILS = "owner@example.com";
     expect(googleEnabled()).toBe(true);
   });
 });
 
-describe("the allowlist", () => {
-  it("ignores case and surrounding spaces", () => {
+describe("optional env allowlist", () => {
+  it("ignores case and surrounding spaces when set", () => {
     process.env.GOOGLE_ALLOWED_EMAILS = " Owner@Example.com , second@example.com ";
     expect(allowedEmails()).toEqual(["owner@example.com", "second@example.com"]);
     expect(isAllowed("OWNER@EXAMPLE.COM")).toBe(true);
     expect(isAllowed(" second@example.com ")).toBe(true);
   });
 
-  it("denies everyone when empty, rather than admitting everyone", () => {
-    expect(isAllowed("anyone@example.com")).toBe(false);
+  it("admits everyone when empty (users table is the real gate)", () => {
+    expect(isAllowed("anyone@example.com")).toBe(true);
     process.env.GOOGLE_ALLOWED_EMAILS = "";
-    expect(isAllowed("anyone@example.com")).toBe(false);
+    expect(isAllowed("anyone@example.com")).toBe(true);
   });
 
   it("denies a missing address", () => {
@@ -79,7 +76,7 @@ describe("the allowlist", () => {
     expect(isAllowed("")).toBe(false);
   });
 
-  it("does not admit a lookalike address", () => {
+  it("does not admit a lookalike address when the list is set", () => {
     process.env.GOOGLE_ALLOWED_EMAILS = "owner@example.com";
     expect(isAllowed("owner@example.com.attacker.test")).toBe(false);
     expect(isAllowed("notowner@example.com")).toBe(false);

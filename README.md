@@ -78,6 +78,254 @@ Neither is trusted blindly. A rule that comes back with no category codes would 
 never pay out, so `inferMccCodes` recovers them from the category name and the review screen
 tells you it did.
 
+## Architecture & flow
+
+CardPilot is a Next.js app that ranks **cards in your wallet** for a purchase. Ranking is
+deterministic (`lib/engine/score.ts`) — no LLM at purchase time. LLMs draft card rules or
+resolve unknown merchants; you review before anything is saved.
+
+### High-level architecture
+
+```mermaid
+flowchart TB
+  subgraph Client["Browser"]
+    UI["Pages + Components"]
+    Offline["localStorage snapshot"]
+    SW["Service worker (PWA)"]
+  end
+
+  subgraph Edge["Next.js proxy.ts"]
+    AuthGate["Auth gate\n(AUTH_SECRET set?)"]
+  end
+
+  subgraph API["API routes"]
+    Recommend["/api/recommend"]
+    Search["/api/merchants/search"]
+    Snapshot["/api/snapshot"]
+    Extract["/api/cards/extract"]
+    Login["/api/login"]
+  end
+
+  subgraph Lib["Core libs"]
+    Session["lib/session"]
+    Merchants["lib/merchants"]
+    Wallet["lib/wallet"]
+    Engine["lib/engine/score\n(pure, no network)"]
+  end
+
+  subgraph External["External (draft/lookup only)"]
+    Groq["Groq API\n(web search + JSON extract)"]
+    Nvidia["NVIDIA NIM\n(merchant MCC mapping)"]
+  end
+
+  subgraph DB["Database"]
+    PGlite["Local: .pglite"]
+    Neon["Prod: Neon Postgres"]
+  end
+
+  UI --> AuthGate
+  AuthGate --> API
+  API --> Session
+  Session --> Wallet
+  Recommend --> Merchants
+  Merchants --> Engine
+  Wallet --> Engine
+  Merchants --> Groq
+  Merchants --> Nvidia
+  Extract --> Groq
+  Snapshot --> Offline
+  UI --> Offline
+  Offline --> Engine
+  Session --> DB
+  Wallet --> DB
+  Merchants --> DB
+```
+
+### Auth & request gate
+
+Every request passes through `proxy.ts`:
+
+```mermaid
+flowchart TD
+  Req["Incoming request"] --> Secret{"AUTH_SECRET set?"}
+  Secret -->|No| Open["Open mode\nauto user local@cardpilot.dev"]
+  Secret -->|Yes| Cookie{"Valid session cookie?"}
+  Cookie -->|No| Login["Redirect /login\nor 401 on API"]
+  Cookie -->|Yes| MustChange{"mustChangePassword?"}
+  MustChange -->|Yes| ChangePw["Force /change-password"]
+  MustChange -->|No| App["Allow app routes"]
+
+  Login --> EmailPw["POST /api/login\nemail + password"]
+  Login --> Google["Google OAuth\n(only pre-provisioned emails)"]
+  EmailPw --> Session["Signed session cookie"]
+  Google --> Session
+```
+
+| Mode | When | Behavior |
+| --- | --- | --- |
+| **Local dev** | `AUTH_SECRET` empty | No login wall; `ensureDevUser()` creates `local@cardpilot.dev` |
+| **Production** | `AUTH_SECRET` set | Admin-provisioned accounts only (`npm run user:create` or Settings → Accounts) |
+
+Each user gets their **own wallet** (`user_cards.user_id`).
+
+### Main user journey — “Which card here?”
+
+Homepage flow (`/` → `Recommender`):
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Home as app/page.tsx
+  participant Rec as Recommender
+  participant Search as /api/merchants/search
+  participant RecAPI as /api/recommend
+  participant Resolve as lib/merchants
+  participant Engine as lib/engine/score
+  participant DB as Postgres/PGlite
+
+  User->>Home: Open /
+  Home->>DB: recentMerchants or starterMerchants
+  Home->>Rec: recents + walletCount
+
+  User->>Rec: Type merchant name
+  Rec->>Search: GET ?q=...
+  Search->>DB: fuzzy local search
+  alt No confident local match
+    Search->>Resolve: web lookup + MCC mapping
+    Resolve->>DB: cache new merchant
+  end
+  Search-->>Rec: suggestion chips
+
+  User->>Rec: Pick merchant + amount
+  Rec->>RecAPI: POST { query, amountCents, isForeign }
+  RecAPI->>Resolve: resolveMerchant
+  Resolve->>DB: merchant row
+  RecAPI->>DB: loadWallet(userId)
+  RecAPI->>Engine: rankWallet(wallet, purchaseContext)
+  Engine-->>RecAPI: scores[]
+  RecAPI-->>Rec: ranked cards + reasons
+  Rec-->>User: highest estimate from wallet rules
+```
+
+Suggestions rank **wallet cards only** — never the full catalogue as if you own them.
+
+### Merchant resolution (local vs web)
+
+```mermaid
+flowchart TD
+  Q["User types merchant name"] --> Local["searchMerchants()\nfuzzy match on DB"]
+  Local --> Confident{"Score ≥ 80 AND\nplausible alias?"}
+  Confident -->|Yes| ReturnLocal["Return local merchants"]
+  Confident -->|No, query ≥ 3 chars| Web["searchMerchantWeb()\nGroq web search"]
+  Web --> Map["NVIDIA or Groq JSON\n→ MCC + category"]
+  Map --> Cache["Upsert merchant in DB"]
+  Cache --> ReturnAI["Return with lookedUp flag"]
+  Confident -->|No, query < 3 chars| ReturnLocal
+```
+
+Used by both **search autocomplete** and **recommend**.
+
+### Ranking engine (pure, deterministic)
+
+```mermaid
+flowchart LR
+  Wallet["loadWallet(userId)\ncards + rules + caps\nactivations + selections\nuser CPP valuations"]
+  Ctx["PurchaseContext\nMCC, merchant slug,\namount, date, foreign, exclusions"]
+  Wallet --> Engine["rankWallet()"]
+  Ctx --> Engine
+  Engine --> Match["Match rules by MCC\nor merchant slug"]
+  Match --> Filter["Filter: date window,\nactivation, selection group,\ncap remaining"]
+  Filter --> Score["Compute earn + FX fee\n→ cents-per-point value"]
+  Score --> Rank["Sort wallet cards\nreturn CardScore[]"]
+```
+
+No network, no DB inside `lib/engine/`.
+
+### Add cards to wallet
+
+```mermaid
+flowchart TD
+  Add["/cards/add"] --> Input{"Input type"}
+  Input -->|Card name| Lookup["lookupCardTerms()\nGroq web search"]
+  Input -->|Paste text| Text["Raw terms text"]
+  Input -->|PDF upload| PDF["pdfToText()"]
+  Lookup --> Extract["extractCardFromText()\nGroq structured JSON"]
+  Text --> Extract
+  PDF --> Extract
+  Extract --> Review["User reviews draft\nuncertainties shown"]
+  Review --> Save["saveExtractedCard()\nserver action"]
+  Save --> DB["cards + earn_rules\n+ user_cards link"]
+  Save --> Wallet["/cards — manage wallet"]
+```
+
+User must **review and save** — nothing is written blindly from model output.
+
+### Wallet & settings
+
+```mermaid
+flowchart TD
+  Cards["/cards"] --> Load["Load user wallet"]
+  Load --> Actions["Server actions"]
+  Actions --> A1["addCardToWallet / remove"]
+  Actions --> A2["setActivation / setSelection"]
+  Actions --> A3["setUserCpp valuations"]
+  Actions --> A4["saveSignupBonus"]
+  Actions --> A5["verifyRule / deleteTransaction"]
+
+  Settings["/settings"] --> Valuations["Point valuations"]
+  Settings --> Admin["Accounts (admin only)\ncreate users"]
+```
+
+### Offline / PWA path
+
+```mermaid
+flowchart LR
+  Mount["Recommender mounts"] --> Snap["GET /api/snapshot"]
+  Snap --> LS["localStorage snapshot\nwallet + all merchants"]
+  LS --> Offline["If network fails:\nrecommendOffline()"]
+  Offline --> Engine["Same rankWallet()\nin browser"]
+```
+
+Snapshot is refreshed on load; ranking logic is shared between server and client.
+
+### Data layer
+
+```mermaid
+flowchart TD
+  Env{"DATABASE_URL set?"}
+  Env -->|No| PGlite["PGlite → ./.pglite\nauto-migrate on start"]
+  Env -->|Yes| Neon["Neon Postgres\nmigrate via npm run db:migrate"]
+
+  PGlite --> Tables["users, user_cards, cards,\nearn_rules, merchants,\ntransactions, point_currencies…"]
+  Neon --> Tables
+```
+
+### Routes at a glance
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Merchant search + card ranking |
+| `/cards` | Your wallet |
+| `/cards/add` | Extract/add card rules |
+| `/settings` | Valuations + admin accounts |
+| `/login`, `/change-password` | Auth (when enabled) |
+| `/api/recommend` | Rank wallet for a purchase |
+| `/api/merchants/search` | Autocomplete + web lookup |
+| `/api/snapshot` | Offline wallet + merchant cache |
+| `/api/cards/extract` | LLM card-rule extraction |
+
+### End-to-end mental model
+
+```mermaid
+flowchart TB
+  Setup["1. Build wallet\n(add cards + rules)"]
+  Search["2. Search merchant\n(local DB → web if needed)"]
+  Rank["3. Engine ranks\nwallet cards only"]
+  Decide["4. You choose card\n(estimates, not advice)"]
+
+  Setup --> Search --> Rank --> Decide
+```
+
 ## Offline
 
 The engine runs in the browser too. `/api/snapshot` returns your wallet, its rules, and
@@ -116,38 +364,43 @@ to correct cap tracking.
    | --- | --- |
    | `DATABASE_URL` | Neon connection string. Its presence switches the app off PGlite. |
    | `GROQ_API_KEY` | Your rotated key. |
-   | `APP_PASSWORD` | A shared password. Set this or Google sign-in, or the app is unauthenticated. |
-   | `AUTH_SECRET` | Signs session cookies. Required for Google sign-in. |
-   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | From the Google Cloud console, for Google sign-in. |
-   | `GOOGLE_ALLOWED_EMAILS` | Who may sign in. Required for Google sign-in, comma separated. |
+   | `AUTH_SECRET` | Signs session cookies and turns the sign-in gate on. |
+   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional Google sign-in. |
+   | `GOOGLE_ALLOWED_EMAILS` | Optional extra Google restriction (users table is still required). |
 
 3. Apply the schema and load the starter data against Neon:
 
    ```bash
    DATABASE_URL="postgres://..." npm run db:migrate
    DATABASE_URL="postgres://..." npm run db:seed
+   DATABASE_URL="postgres://..." npm run user:create -- --email you@example.com --password 'temp-pass' --admin
    ```
 
-4. Deploy. On the first visit you'll be asked to sign in; the session cookie holds a signed
-   payload rather than any credential, and lasts a year.
-
+4. Deploy. Sign in with the admin email, change the temporary password, then create other users from Settings.
 ## Signing in
 
-Two ways in, and you can enable either or both. With neither configured the app is wide open,
-which is only appropriate on localhost.
+Accounts are **admin-provisioned** — there is no public self-registration.
 
-**Shared password.** Set `APP_PASSWORD`. Simple, and needs nothing external.
+1. Set `AUTH_SECRET` (required in production).
+2. Create the first admin:
 
-**Google.** Create an OAuth 2.0 Client ID of type *Web application* at
-[Google Cloud credentials](https://console.cloud.google.com/apis/credentials), then set
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SECRET`, and `GOOGLE_ALLOWED_EMAILS`. Register
-the redirect URI exactly, including the scheme and port:
+   ```bash
+   DATABASE_URL="postgres://..." npm run user:create -- --email you@example.com --password 'temp-pass' --admin
+   ```
+
+3. Sign in with that email and temporary password, then set a new password when prompted.
+4. Admins can create more users under **Settings → Accounts**, or with the same CLI.
+
+**Google (optional).** Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Register the redirect URI:
 
 ```
 http://localhost:3000/api/auth/google/callback
 https://your-domain.vercel.app/api/auth/google/callback
 ```
 
+Google only works for emails that already exist as users. Optional `GOOGLE_ALLOWED_EMAILS` further restricts Google (not email/password).
+
+Each user has a private wallet; the card catalogue is shared.
 `GOOGLE_ALLOWED_EMAILS` is not optional. "Sign in with Google" on its own means *anyone with a
 Google account*, so the allowlist is what makes it yours; an empty list refuses everyone rather
 than admitting everyone. It is also re-checked on every request, so removing an address

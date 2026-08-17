@@ -17,10 +17,14 @@ export function googleConfig(): GoogleConfig | null {
 }
 
 /**
- * Only these addresses may sign in. Without it, "sign in with Google" would
- * mean anyone with a Google account, and this app holds one person's spending
- * history — so an empty list denies everyone rather than admitting everyone.
+ * Google sign-in is available when an OAuth client is configured. Access is
+ * still limited to emails that already exist in the users table.
  */
+export function googleEnabled(): boolean {
+  return googleConfig() !== null;
+}
+
+/** @deprecated Prefer looking up the users table. Kept for older env docs. */
 export function allowedEmails(): string[] {
   return (process.env.GOOGLE_ALLOWED_EMAILS ?? "")
     .split(",")
@@ -30,12 +34,9 @@ export function allowedEmails(): string[] {
 
 export function isAllowed(email: string | undefined | null): boolean {
   if (!email) return false;
-  return allowedEmails().includes(email.trim().toLowerCase());
-}
-
-/** Google is only usable once a client, a secret, and an allowlist all exist. */
-export function googleEnabled(): boolean {
-  return googleConfig() !== null && allowedEmails().length > 0;
+  const list = allowedEmails();
+  if (list.length === 0) return true;
+  return list.includes(email.trim().toLowerCase());
 }
 
 function randomToken(bytes = 32): string {

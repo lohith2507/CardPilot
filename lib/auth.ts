@@ -3,8 +3,10 @@ export const AUTH_COOKIE = "cardpilot_session";
 /** Who is signed in, and by which route. */
 export type Session = {
   via: "password" | "google";
-  /** Present for Google sessions, so access can be revoked by editing the allowlist. */
-  email?: string;
+  userId: number;
+  email: string;
+  isAdmin: boolean;
+  mustChangePassword: boolean;
   /** Issued-at, seconds. */
   iat: number;
 };
@@ -41,7 +43,18 @@ async function sign(payload: string, secret: string): Promise<string> {
  * comparison below.
  */
 export async function signSession(session: Omit<Session, "iat">, secret: string): Promise<string> {
-  const payload = toBase64Url(encoder.encode(JSON.stringify({ ...session, iat: Math.floor(Date.now() / 1000) })));
+  const payload = toBase64Url(
+    encoder.encode(
+      JSON.stringify({
+        via: session.via,
+        userId: session.userId,
+        email: session.email,
+        isAdmin: session.isAdmin,
+        mustChangePassword: session.mustChangePassword,
+        iat: Math.floor(Date.now() / 1000),
+      }),
+    ),
+  );
   return `${payload}.${await sign(payload, secret)}`;
 }
 
@@ -59,8 +72,17 @@ export async function readSession(token: string | undefined, secret: string): Pr
   try {
     const parsed = JSON.parse(new TextDecoder().decode(fromBase64Url(payload))) as Session;
     if (parsed.via !== "password" && parsed.via !== "google") return null;
-    if (parsed.via === "google" && !parsed.email) return null;
-    return parsed;
+    if (!parsed.email || typeof parsed.userId !== "number" || !Number.isFinite(parsed.userId)) {
+      return null;
+    }
+    return {
+      via: parsed.via,
+      userId: parsed.userId,
+      email: parsed.email,
+      isAdmin: Boolean(parsed.isAdmin),
+      mustChangePassword: Boolean(parsed.mustChangePassword),
+      iat: parsed.iat,
+    };
   } catch {
     return null;
   }
@@ -90,17 +112,16 @@ export function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export function appPassword(): string | null {
-  const value = process.env.APP_PASSWORD?.trim();
-  return value ? value : null;
+/**
+ * When AUTH_SECRET is set, the app requires a signed-in user. Localhost can
+ * leave it empty and stay open for PGlite development.
+ */
+export function authRequired(): boolean {
+  return Boolean(process.env.AUTH_SECRET?.trim());
 }
 
-/**
- * Signs sessions. Falls back to the password so a password-only setup needs no
- * extra configuration, but Google sign-in requires its own secret because there
- * may be no password to borrow.
- */
+/** Signs sessions. Required whenever the gate is on. */
 export function authSecret(): string | null {
   const explicit = process.env.AUTH_SECRET?.trim();
-  return explicit ? explicit : appPassword();
+  return explicit ? explicit : null;
 }

@@ -16,7 +16,7 @@
    * grey page so white cards lift off it without needing heavy borders, one
    * green carrying every action, and red reserved for money you are losing.
    */
-  --color-canvas: #f1f3f2;
+  --color-canvas: #eef2f0;
   --color-surface: #ffffff;
   --color-raised: #f6f8f7;
   --color-line: #e2e7e4;
@@ -106,6 +106,37 @@
 
 .animate-slide-up {
   animation: slide-up 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes search-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgb(26 138 83 / 0.25),
+      var(--shadow-card);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgb(26 138 83 / 0.12),
+      var(--shadow-lifted);
+  }
+}
+
+.animate-search-pulse {
+  animation: search-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.animate-progress-slide {
+  animation: progress-slide 1.1s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
