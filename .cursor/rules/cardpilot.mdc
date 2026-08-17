@@ -1,0 +1,13 @@
+---
+description: CardPilot product and engineering habits from FABLE-5 principles
+alwaysApply: true
+---
+
+# CardPilot
+
+- Rankings are deterministic arithmetic on saved wallet rules — not financial advice and not LLM judgment at purchase time.
+- Copy: humble estimates (“by the rules in your wallet”), never absolute “best card” guarantees.
+- Never invent rates or MCCs; surface uncertainties for AI/seed/lookup data; user reviews before save.
+- Suggest only cards in the user’s wallet.
+- Keep `lib/engine/` pure. Prefer schema + post-process fixes over trusting model output.
+- GitHub: **lohith2507** only — never **lveepuri_costco**.

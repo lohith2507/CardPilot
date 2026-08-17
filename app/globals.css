@@ -1,0 +1,119 @@
+/*
+ * Sources are listed explicitly. Tailwind's automatic detection walks the whole
+ * project, which lets it read the PGlite data directory and any stray binary
+ * file; byte sequences in those parse as arbitrary-value utilities like
+ * `w-[...]` and emit CSS that fails to parse, taking every page down with a 500.
+ */
+@import "tailwindcss" source(none);
+
+@source "../app/**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
+@source "../lib/**/*.{ts,tsx}";
+
+@theme {
+  /*
+   * Light and near-neutral, the way a banking dashboard reads: a faintly warm
+   * grey page so white cards lift off it without needing heavy borders, one
+   * green carrying every action, and red reserved for money you are losing.
+   */
+  --color-canvas: #f1f3f2;
+  --color-surface: #ffffff;
+  --color-raised: #f6f8f7;
+  --color-line: #e2e7e4;
+  --color-ink: #10211a;
+  --color-muted: #5c6b64;
+
+  --color-brand: #1a8a53;
+  --color-brand-deep: #136540;
+  --color-brand-soft: #e7f4ec;
+
+  --color-rose: #c33a2c;
+  --color-rose-soft: #fdecea;
+
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1rem;
+
+  /*
+   * Elevation does the work borders used to. Two stacked shadows read as a
+   * physical card: a tight contact shadow plus a wider ambient one.
+   */
+  --shadow-card: 0 1px 2px rgb(16 33 26 / 0.06), 0 2px 8px rgb(16 33 26 / 0.04);
+  --shadow-lifted: 0 2px 4px rgb(16 33 26 / 0.07), 0 10px 24px rgb(16 33 26 / 0.08);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    /* Keep content clear of the notch and the home indicator. */
+    padding-top: env(safe-area-inset-top);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Figures in a column must line up so they can be compared at a glance. */
+  input[type="number"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--color-brand-soft);
+    color: var(--color-brand-deep);
+  }
+}
+
+@utility numeral {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+@keyframes card-lift {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-lift {
+  animation: card-lift 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-up {
+  animation: slide-up 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

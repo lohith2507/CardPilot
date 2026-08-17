@@ -1,0 +1,145 @@
+Card_ID,Region,Card Name,Issuer,Annual Fee,Min Income,Credit Limit,Cashback %,Reward Rate,Reward Type,Category,Foreign Transaction Fee,Lounge Access,Joining Bonus,Spend Requirement,Key Benefits,Best For
+CC001,India,Scotiabank Card 1,Scotiabank,₹1999,₹6L,$5K-$20K,10%,1X,Cashback,Shopping,3.00%,Yes,None,$3K,High retail cashback,Everyday spending
+CC002,Australia,Amex Card 2,Amex,₹5000,₹10L,₹1L-5L,3%,4X,Cashback,Lifestyle,2.00%,Yes,5000 pts,$3K,Multiplier rewards,Lifestyle
+CC003,UK,ANZ Card 3,ANZ,₹5000,₹6L,₹1L-5L,5%,6X,Miles,Travel,2.00%,No,10000 pts,₹1L,International travel miles,Frequent flyers
+CC004,Singapore,Axis Card 4,Axis,$95,₹2L,$5K-$20K,3%,6X,Miles,Travel,3.50%,No,5000 pts,₹1L,Entry-level travel perks,Travel
+CC005,USA,Amex Card 5,Amex,$0,$50K,$5K-$20K,5%,4X,Cashback,Shopping,3.50%,No,None,₹1L,No-fee diverse cashback,Budget shoppers
+CC081,India,Amazon Pay ICICI,ICICI,₹0,Refer to Issuer,Based on Profile,2.00%,5.00%,Cashback,Shopping,1.99%,No,₹250 cashback,Lifetime Free,5% Unlimited for Prime,Amazon shoppers
+CC082,India,SBI Cashback,SBI,₹999,Refer to Issuer,Based on Profile,1.00%,5.00%,Cashback,Cashback,3.50%,No,₹2k@₹2L spend,₹2 Lakhs/year,5% Unlimited online cashback,Online shopping
+CC083,USA,Citi Double Cash,Citi,$0,Refer to Issuer,Based on Profile,0.00%,2.00%,Cashback,Cashback,3.00%,No,Travel upgrade,N/A,1% on buy + 1% on pay,General spending
+CC085,India,Axis ACE,Axis,₹499,Refer to Issuer,Based on Profile,2.00%,5.00%,Cashback,Cashback,3.50%,4 domestic/yr,Check Terms,₹2 Lakhs/year,5% on GPay Bills,Bill payments
+CC087,India,HDFC Infinia,HDFC,₹12.5k,Refer to Issuer,Based on Profile,1.67%,5X,Points,Ultra-Premium,2.00%,Unlimited,25k@₹8L,₹10 Lakhs/year,Global concierge and lounge,High spenders
+CC088,USA,Chase Sapphire Preferred,Chase,$95,Refer to Issuer,Based on Profile,1.00%,3X,Points,Travel,0.00%,10 Priority Pass,60k signup,$4000/3 mo,1:1 Point Transfer,Travel rewards
+CC090,India,Axis Magnus,Axis,₹11k,Refer to Issuer,Based on Profile,6.00%,12X,Points,Premium,2.00%,Unlimited,25k@₹15L,₹25 Lakhs/year,High reward accrual,Travel+luxury
+CC091,India,Amex Platinum Charge,Amex,₹60k,Refer to Issuer,Based on Profile,1.50%,1.5X,Points,Luxury,3.50%,Unlimited,25k@₹4L,₹20 Lakhs/year,Fine Hotels and Resorts access,Ultra-premium
+CC093,USA,Amex Gold,Amex,$250,Refer to Issuer,Based on Profile,1.00%,4X,Points,Dining,0.00%,No,90k signup,$6000/6 mo,4X Dining and Groceries,Foodies
+CC101,India,Airtel Axis,Axis,₹500,Refer to Issuer,Based on Profile,1.00%,25.00%,Cashback,Telecom,3.50%,4 domestic/yr,None,₹2 Lakhs/year,25% on Airtel bills,Utility payments
+CC132,India,HDFC Tata Neu Infinity,HDFC,₹1499,₹1L/mo,Based on Profile,1.50%,5.00%,Cashback,Shopping,2.00%,8 domestic/yr,1499 NeuCoins,₹3 Lakhs/year,5% NeuCoins on Tata brands,Neu Ecosystem
+CC133,India,Swiggy HDFC,HDFC,₹500,₹25k/mo,Based on Profile,1.00%,10.00%,Cashback,Food,3.50%,No,Swiggy One,₹2 Lakhs/year,10% cashback on Swiggy,Foodies
+CC134,USA,Capital One Venture X,Capital One,$395,Refer to Issuer,Based on Profile,2.00%,10X,Miles,Travel,0.00%,Unlimited,75k miles,$4000/3 mo,Annual $300 travel credit,Premium Travel
+CC135,USA,Citi Custom Cash,Citi,$0,Refer to Issuer,Based on Profile,1.00%,5.00%,Cashback,Shopping,3.00%,No,$200 bonus,$1500/3 mo,5% in top spend category,Budgeting
+CC136,India,SBI Elite,SBI,₹4999,₹1L/mo,Based on Profile,0.50%,5X,Points,Lifestyle,1.99%,6 International/yr,₹5000 voucher,₹10 Lakhs/year,Milestone reward points,High Spenders
+CC137,India,Axis Atlas,Axis,₹5000,₹1L/mo,Based on Profile,0.00%,5X,Miles,Travel,3.50%,8 domestic/yr,5000 EDGE miles,₹15 Lakhs/year,Tier-based miles system,Airlines
+CC138,India,ICICI Sapphiro,ICICI,₹6500,₹1.5L/mo,Based on Profile,1.00%,4X,Points,Lifestyle,3.50%,Unlimited,Vouchers ₹9000,₹10 Lakhs/year,BOGO on Movie tickets,Entertainment
+CC139,India,IDFC First Wealth,IDFC,₹0,₹3L/mo,Based on Profile,0.00%,10X,Points,Premium,1.50%,Unlimited,None,N/A,Buy 1 Get 1 on Movies,Premium
+CC140,India,Amex Membership Rewards,Amex,₹1000,₹6L/yr,Based on Profile,0.00%,1X,Points,Rewards,3.50%,No,2000 pts,₹1.5 Lakhs/year,1000 bonus pts monthly,Points collectors
+CC141,India,HDFC Regalia Gold,HDFC,₹2500,₹1L/mo,Based on Profile,0.00%,4X,Points,Lifestyle,2.00%,12 domestic/yr,₹2500 voucher,₹4 Lakhs/year,M&S/Reliance vouchers,Lifestyle
+CC142,USA,Chase Freedom Flex,Chase,$0,Refer to Issuer,Based on Profile,1.00%,5.00%,Cashback,Cashback,3.00%,No,$200 bonus,$500/3 mo,5% Rotating categories,Strategic spenders
+CC143,USA,BofA Customized Cash,Bank of America,$0,Refer to Issuer,Based on Profile,1.00%,3.00%,Cashback,Cashback,3.00%,No,$200 bonus,$1000/3 mo,Select 3% category,Customized rewards
+CC144,USA,Discover it Cash Back,Discover,$0,Refer to Issuer,Based on Profile,1.00%,5.00%,Cashback,Cashback,0.00%,No,Cashback Match,Year 1,Unlimited Cashback Match,Beginners
+CC145,Canada,Rogers Mastercard,Rogers,$0,Refer to Issuer,Based on Profile,2.00%,2.00%,Cashback,Shopping,2.50%,No,None,N/A,3% on Rogers/Fido bills,Telecom
+CC146,Canada,TD First Class Travel,TD,$139,Refer to Issuer,Based on Profile,1.50%,9X,Points,Travel,3.50%,No,100k pts,$5000/180 days,Expedia for TD points,Travel
+CC147,UK,HSBC Premier,HSBC,£0,Refer to Issuer,Based on Profile,0.00%,1X,Points,Premium,2.99%,No,None,N/A,HSBC Global Money access,HSBC Customers
+CC148,UK,Virgin Atlantic Reward,Virgin Money,£0,Refer to Issuer,Based on Profile,0.00%,0.75X,Miles,Travel,2.99%,No,None,N/A,Virgin Points per £1,Airlines
+CC149,Singapore,DBS Altitude,DBS,S$194,Refer to Issuer,Based on Profile,0.00%,1.2X,Miles,Travel,3.25%,2 Lounge/yr,Up to 43k miles,S$2000/mo,Miles never expire,Travel
+CC150,Singapore,OCBC 365,OCBC,S$194,Refer to Issuer,Based on Profile,0.00%,6.00%,Cashback,Cashback,3.25%,No,None,S$800/mo,Cashback on Dining/Fuel,Daily spends
+CC151,India,StanChart Ultimate,Standard Chartered,₹5000,₹2L/mo,Based on Profile,3.33%,3.33%,Points,Luxury,2.00%,Unlimited,5000 pts,Check Terms,Best reward rate in India,High spenders
+CC152,India,SBI Prime,SBI,₹2999,₹60k/mo,Based on Profile,0.50%,10X,Points,Lifestyle,3.50%,8 domestic/yr,3000 pts,₹3 Lakhs/year,Trident Privilege benefits,Lifestyle
+CC153,India,Axis Vistara Infinite,Axis,₹10000,₹2L/mo,Based on Profile,0.00%,6X,Miles,Travel,3.50%,Unlimited,Business ticket,₹12 Lakhs/year,Free Business class tickets,Airlines
+CC154,USA,Wells Fargo Autograph,Wells Fargo,$0,Refer to Issuer,Based on Profile,0.00%,3X,Points,Lifestyle,0.00%,No,20k pts,$1000/3 mo,3X on Dining/Travel/Fuel,Utility
+CC155,India,Marriott Bonvoy HDFC,HDFC,₹3000,₹1L/mo,Based on Profile,0.00%,8X,Points,Travel,3.50%,12 domestic/yr,Silver Elite status,₹15 Lakhs/year,Free Night Award,Hotels
+CC156,India,Kotak White,Kotak,₹3000,₹2L/mo,Based on Profile,0.00%,Pass,Rewards,Lifestyle,3.50%,8 domestic/yr,None,₹12 Lakhs/year,White Pass vouchers,High spenders
+CC157,India,Standard Chartered Smart,Standard Chartered,₹499,₹25k/mo,Based on Profile,2.00%,2.00%,Cashback,Online,3.50%,No,None,₹1.2 Lakhs/year,2% on online spends,Online shopping
+CC158,India,Yes Bank BYOC,Yes Bank,₹0,₹35k/mo,Based on Profile,10.00%,10.00%,Cashback,Custom,3.50%,No,None,N/A,Choose your own categories,Gen Z
+CC159,India,RBL World Safari,RBL,₹3000,₹1.5L/mo,Based on Profile,0.00%,5X,Points,Travel,0.00%,2 International/yr,None,₹5 Lakhs/year,Zero Foreign markup,Travelers
+CC160,India,IndusInd Legend,IndusInd,₹0,₹50k/mo,Based on Profile,1.00%,2X,Points,Rewards,1.80%,1 domestic/qt,None,N/A,Low forex for rewards,General
+CC161,Australia,Westpac Altitude Black,Westpac,A$250,Refer to Issuer,Based on Profile,0.00%,2X,Points,Lifestyle,3.00%,2 Lounge/yr,120k pts,A$3000/90 days,Velocity/Qantas points,Rewards
+CC162,Canada,BMO Cashback World Elite,BMO,$120,Refer to Issuer,Based on Profile,5.00%,5.00%,Cashback,Cashback,2.50%,No,10% cashback first 3 mo,N/A,Highest grocery cashback,Families
+CC163,UAE,ADCB 365,ADCB,AED 0,Refer to Issuer,Based on Profile,0.00%,3.00%,Cashback,Cashback,2.99%,No,AED 365,AED 5000/mo,Cashback on all categories,Budgeting
+CC164,Singapore,HSBC Revolution,HSBC,S$0,Refer to Issuer,Based on Profile,0.00%,4.00%,Miles,Shopping,3.25%,No,None,N/A,10X pts on online/contactless,Tech-savvy
+CC165,India,AU Vetta,AU Bank,₹2999,₹60k/mo,Based on Profile,0.00%,4X,Points,Rewards,3.50%,1 domestic/qt,None,₹1.5 Lakhs/year,Quarterly milestone vouchers,Middle income
+CC166,USA,Amex Blue Cash Everyday,Amex,$0,Refer to Issuer,Based on Profile,3.00%,3.00%,Cashback,Shopping,2.70%,No,$200 bonus,$2000/6 mo,3% Online/Grocery/Fuel,Everyday
+CC167,USA,Chase Ink Business Cash,Chase,$0,Refer to Issuer,Based on Profile,5.00%,5.00%,Cashback,Business,3.00%,No,$350 bonus,$3000/3 mo,5% Office supplies/Internet,SME
+CC168,India,HDFC Diners Privilege,HDFC,₹2500,₹70k/mo,Based on Profile,0.00%,4X,Points,Premium,2.00%,12 domestic/yr,Voucher ₹2500,₹3 Lakhs/year,Swiggy/Zomato BOGO,Professional
+CC169,India,SBI Pulse,SBI,₹1499,₹30k/mo,Based on Profile,0.00%,10X,Points,Health,3.50%,8 domestic/yr,Noise Smartwatch,₹2 Lakhs/year,Fitpass Pro Membership,Health conscious
+CC170,India,Axis Select,Axis,₹3000,₹50k/mo,Based on Profile,0.00%,10X,Points,Lifestyle,3.50%,12 domestic/yr,Amazon ₹2000,₹4 Lakhs/year,Buy 1 Get 1 Movies,Lifestyle
+CC171,USA,U.S. Bank Altitude Go,U.S. Bank,$0,Refer to Issuer,Based on Profile,4.00%,4.00%,Points,Dining,0.00%,No,20k pts,$1000/3 mo,4X Dining/Takeout,Foodies
+CC172,USA,Citi Premier,Citi,$95,Refer to Issuer,Based on Profile,0.00%,3X,Points,Travel,0.00%,No,60k pts,$4000/3 mo,3X Gas/Grocery/Air,Travelers
+CC173,Canada,Scotiabank Passport Visa,Scotiabank,$150,Refer to Issuer,Based on Profile,2.00%,2.00%,Points,Travel,0.00%,6 Lounge/yr,30k pts,$1000/3 mo,No foreign txn fee,Travel
+CC174,Singapore,UOB One,UOB,S$194,Refer to Issuer,Based on Profile,3.33%,10.00%,Cashback,Cashback,3.25%,No,S$100,S$2000/mo,Tiered cashback system,High spenders
+CC175,India,Airtel Axis Bank,Axis,₹500,Refer to Issuer,Based on Profile,1.00%,25.00%,Cashback,Telecom,3.50%,4 domestic/yr,None,₹2 Lakhs/year,25% off Airtel bills,Utilities
+CC176,India,ICICI Coral,ICICI,₹500,₹25k/mo,Based on Profile,0.00%,2X,Points,Rewards,3.50%,1 domestic/qt,None,₹1.5 Lakhs/year,Movie & Dining discounts,Beginners
+CC177,India,HDFC Tata Neu Plus,HDFC,₹499,₹25k/mo,Based on Profile,1.00%,2.00%,Cashback,Shopping,3.50%,4 domestic/yr,499 NeuCoins,₹1 Lakh/year,2% NeuCoins on Tata brands,Neu Ecosystem
+CC178,USA,Apple Card,Goldman Sachs,$0,Refer to Issuer,Based on Profile,3.00%,3.00%,Cashback,Shopping,0.00%,No,None,N/A,3% on Apple/Partner shops,Apple users
+CC179,USA,Target RedCard,TD Bank,$0,Refer to Issuer,Based on Profile,5.00%,5.00%,Cashback,Shopping,3.50%,No,None,N/A,5% at Target,Retail
+CC180,UK,Amex Cashback Everyday,Amex,£0,Refer to Issuer,Based on Profile,5.00%,1.00%,Cashback,Cashback,2.99%,No,None,£3000/yr,5% in first 3 months,Cashback
+CC181,Australia,NAB Rewards Signature,NAB,A$295,Refer to Issuer,Based on Profile,0.00%,1.25X,Points,Rewards,3.00%,Yes,120k pts,A$3000/60 days,Personal Concierge,Premium
+CC182,India,SBI CashBack,SBI,₹999,₹30k/mo,Based on Profile,1.00%,5.00%,Cashback,Online,3.50%,No,None,₹2 Lakhs/year,5% online unlimited,E-commerce
+CC183,USA,SavorOne,Capital One,$0,Refer to Issuer,Based on Profile,3.00%,3.00%,Cashback,Dining,0.00%,No,$200 bonus,$1000/3 mo,3% Dining/Entertainment,Lifestyle
+CC184,Canada,Amex Cobalt,Amex,$155,Refer to Issuer,Based on Profile,0.00%,5X,Points,Food,2.50%,No,30k pts,$500/mo,5X Dining & Groceries,Foodies
+CC185,UAE,FAB Cashback,FAB,AED 315,Refer to Issuer,Based on Profile,0.00%,5.00%,Cashback,Cashback,2.00%,No,AED 300,AED 5000/mo,5% on Grocery/School,Families
+CC186,India,Flipkart Axis Bank,Axis,₹500,₹15k/mo,Based on Profile,1.50%,5.00%,Cashback,Shopping,3.50%,4 domestic/yr,Voucher ₹500,₹3.5 Lakhs/year,5% on Flipkart/Myntra,Flipkart users
+CC187,India,OneCard,Federal/CSB,₹0,Refer to Issuer,Based on Profile,1.00%,5.00%,Points,Rewards,1.00%,No,None,N/A,Metal card with 5X points,Tech-savvy
+CC188,USA,Hilton Honors Amex,Amex,$0,Refer to Issuer,Based on Profile,0.00%,7X,Points,Travel,0.00%,No,100k pts,$2000/6 mo,7X at Hilton hotels,Travel
+CC189,India,Axis My Zone,Axis,₹500,₹20k/mo,Based on Profile,0.00%,4X,Points,Entertainment,3.50%,No,Swiggy/SonyLIV,₹2 Lakhs/year,Free SonyLIV Subscription,Streaming
+CC190,India,HDFC Regalia,HDFC,₹2500,₹1L/mo,Based on Profile,0.00%,4X,Points,Lifestyle,2.00%,12 domestic/yr,None,₹3 Lakhs/year,Classic lifestyle rewards,Standard
+CC191,India,Yes Bank Reserv,Yes Bank,₹1999,₹1.5L/mo,Based on Profile,0.00%,24X,Points,Lifestyle,1.75%,Unlimited,None,₹3 Lakhs/year,Subscription benefits,High Reward
+CC192,USA,X1 Card,X1,$0,Refer to Issuer,Based on Profile,0.00%,3X,Points,Shopping,0.00%,No,None,N/A,3X points on $15k+ spend,High Spend
+CC193,India,Federal Celesta,Federal,₹3000,₹2L/mo,Based on Profile,0.00%,3X,Points,Rewards,2.00%,Unlimited,None,N/A,BOGO Movies,Premium
+CC194,UK,Barclaycard Avios,Barclays,£0,Refer to Issuer,Based on Profile,0.00%,1X,Miles,Travel,2.99%,No,5000 bonus,£1000/3 mo,Avios on every £1,Travel
+CC195,India,BoB Eterna,BoB,₹2499,₹1L/mo,Based on Profile,0.00%,15X,Points,Shopping,2.00%,Unlimited,None,₹4 Lakhs/year,15X on Travel/Dining,High Point
+CC196,India,HSBC Cashback,HSBC,₹999,₹40k/mo,Based on Profile,1.50%,10.00%,Cashback,Cashback,3.50%,No,None,₹2 Lakhs/year,10% on Dining/Groceries,Families
+CC197,India,Kotak Mojo,Kotak,₹1000,₹30k/mo,Based on Profile,0.00%,2.5X,Points,Online,3.50%,8 domestic/yr,None,₹1 Lakh/year,2.5 Mojo points/₹100 online,Online
+CC198,USA,VentureOne,Capital One,$0,Refer to Issuer,Based on Profile,0.00%,1.25X,Miles,Travel,0.00%,No,20k miles,$500/3 mo,No-fee travel miles,Beginner Travel
+CC199,India,AU Zenith,AU Bank,₹7999,₹2.5L/mo,Based on Profile,1.00%,20X,Points,Luxury,1.99%,Unlimited,None,₹5 Lakhs/year,Epicure Membership,Ultra-Premium
+CC200,USA,Amex EveryDay,Amex,$0,Refer to Issuer,Based on Profile,0.00%,2X,Points,Shopping,2.70%,No,10k pts,$2000/6 mo,20% extra pts on 20 txns,Rewards
+CC201,India,Standard Chartered Ultimate 2,SCB,₹5000,₹2L/mo,Based on Profile,3.33%,5X,Points,Premium,2.00%,Unlimited,5000 pts,₹10L/yr,Premium Dining perks,Wealthy
+CC202,India,SBI Air India Signature,SBI,₹4999,₹1L/mo,Based on Profile,0.00%,30X,Miles,Travel,3.50%,8 domestic/yr,20k miles,₹10L/yr,30 pts per ₹100 Air India,Airlines
+CC203,India,ICICI Emeralde Private,ICICI,₹12000,₹3L/mo,Based on Profile,0.00%,6X,Points,Ultra-Luxury,1.50%,Unlimited,Vouchers ₹12000,₹15L/yr,Golf & Concierge,Ultra-High
+CC204,India,Axis Reserve,Axis,₹50000,₹5L/mo,Based on Profile,0.00%,15X,Points,Luxury,1.50%,Unlimited,50k EDGE pts,₹25L/yr,Luxury Hotel status,Elite
+CC205,India,Amex Platinum Reserve,Amex,₹10000,₹6L/yr,Based on Profile,0.00%,1X,Points,Lifestyle,3.50%,12 domestic/yr,11k pts,₹4L/yr,Taj/ITC vouchers,Luxury
+CC206,USA,Chase Freedom Unlimited 2,Chase,$0,Refer to Issuer,Based on Profile,1.50%,3X,Points,Shopping,3.00%,No,None,$500/3 mo,1.5% everything,Budget
+CC207,USA,Citi Double Cash 2,Citi,$0,Refer to Issuer,Based on Profile,2.00%,2X,Points,Cashback,3.00%,No,None,N/A,2% flat cashback,Simplicity
+CC208,UK,Amex Platinum UK,Amex,£575,Refer to Issuer,Based on Profile,0.00%,1X,Points,Travel,2.99%,Unlimited,30k pts,£4000/3 mo,Travel Insurance/Credits,Global Travel
+CC209,Canada,Scotiabank Gold Amex,Scotiabank,$120,Refer to Issuer,Based on Profile,0.00%,5X,Points,Dining,2.50%,No,40k pts,$1000/3 mo,5X on Dining/Groceries,Foodies
+CC210,Australia,CommBank Ultimate,CBA,A$35,Refer to Issuer,Based on Profile,0.00%,3X,Points,Rewards,0.00%,No,None,A$2500/mo,No foreign exchange fees,Travel
+CC211,India,IndusInd Pioneer Heritage,IndusInd,₹90000,₹5L/mo,Based on Profile,0.00%,2X,Points,Elite,1.50%,Unlimited,None,N/A,Luxury lifestyle perks,Billionaires
+CC212,India,SBI Prime Vistara,SBI,₹2999,₹1L/mo,Based on Profile,0.00%,4X,Miles,Travel,3.50%,8 domestic/yr,Premium Economy ticket,₹8L/yr,Vistara Silver status,Travel
+CC213,USA,Capital One Savor,Capital One,$95,Refer to Issuer,Based on Profile,4.00%,4X,Cashback,Dining,0.00%,No,$300 bonus,$3000/3 mo,4X Dining/Entertainment,Dining
+CC214,India,HDFC 6E Rewards,HDFC,₹2500,₹1L/mo,Based on Profile,0.00%,5X,Points,Travel,3.50%,8 domestic/yr,IndiGo Voucher,₹5L/yr,IndiGo flight benefits,Airlines
+CC215,India,IDFC First Select 2,IDFC,₹0,₹1L/mo,Based on Profile,0.00%,10X,Points,Lifestyle,1.99%,8 domestic/yr,None,N/A,10X rewards on bday,Lifestyle
+CC216,India,Axis Magnus for Burgundy,Axis,₹0,Burgundy Customer,Based on Profile,0.00%,12X,Points,Ultra-Premium,2.00%,Unlimited,None,N/A,Exclusive Burgundy perks,HNI
+CC217,India,Standard Chartered EaseMyTrip,SCB,₹350,₹25k/mo,Based on Profile,0.00%,10X,Points,Travel,3.50%,4 domestic/yr,None,₹50k/yr,10X on EaseMyTrip,Booking
+CC218,India,AU Zenith Plus,AU Bank,₹4999,₹2.5L/mo,Based on Profile,1.00%,2X,Points,Travel,0.99%,Unlimited,Vouchers ₹5000,₹8L/yr,0.99% Forex markup,International
+CC219,India,BoB Premiere,BoB,₹1000,₹50k/mo,Based on Profile,0.00%,5X,Points,Rewards,2.50%,No,None,₹1.2L/yr,5X on Travel/Dining,Value
+CC220,India,RBL Shoprite,RBL,₹500,₹25k/mo,Based on Profile,5.00%,20X,Points,Shopping,3.50%,No,None,₹1L/yr,20X on Groceries,Groceries
+CC221,USA,Discover it Student,Discover,$0,Student,Based on Profile,2.00%,2.00%,Cashback,Student,0.00%,No,None,N/A,Cashback for good grades,Students
+CC222,UK,Virgin Atlantic Reward Plus,Virgin Money,£160,Refer to Issuer,Based on Profile,0.00%,1.5X,Miles,Travel,2.99%,No,18k miles,N/A,1.5 Virgin pts per £1,Airlines
+CC223,Canada,CIBC Aventura,CIBC,$139,Refer to Issuer,Based on Profile,0.00%,2X,Points,Travel,3.50%,4 Lounge/yr,35k pts,N/A,Travel insurance,Travel
+CC224,Australia,HSBC Star Alliance,HSBC,A$0,Refer to Issuer,Based on Profile,0.00%,1X,Points,Travel,3.00%,No,Star Alliance Gold status,A$4000/90 days,Global airline status,Airlines
+CC225,Singapore,OCBC Titanium,OCBC,S$194,Refer to Issuer,Based on Profile,0.00%,4.00%,Miles,Shopping,3.25%,No,None,N/A,10X pts on electronics,Retail
+CC226,India,HDFC Millennia 2,HDFC,₹1000,₹35k/mo,Based on Profile,5.00%,5.00%,Cashback,Shopping,3.50%,8 domestic/yr,None,₹1L/yr,5% on Amazon/Flipkart,E-commerce
+CC227,India,SBI SimplyClick 2,SBI,₹499,₹20k/mo,Based on Profile,0.00%,10X,Points,Online,3.50%,No,₹500 voucher,₹1L/yr,10X on partners,Shopping
+CC228,India,Axis Neo,Axis,₹250,₹15k/mo,Based on Profile,0.00%,1X,Points,Shopping,3.50%,No,None,₹1L/yr,Zomato/Blinkit discounts,Budget
+CC229,India,ICICI HPCL Super Saver,ICICI,₹500,₹25k/mo,Based on Profile,5.00%,5.00%,Cashback,Fuel,3.50%,No,None,₹1.5L/yr,5% on HPCL fuel,Fuel
+CC230,India,Amex Platinum Travel,Amex,₹3500,₹6L/yr,Based on Profile,0.00%,1X,Points,Travel,3.50%,8 domestic/yr,None,₹4L/yr,₹40k+ value in Taj vouchers,Travel
+CC231,USA,Chase Sapphire Reserve,Chase,$550,Refer to Issuer,Based on Profile,0.00%,10X,Points,Travel,0.00%,Unlimited,60k pts,$4000/3 mo,$300 travel credit,Premium
+CC232,USA,Amex Platinum Card,Amex,$695,Refer to Issuer,Based on Profile,1.00%,5X,Points,Luxury,0.00%,Unlimited,150k pts,$8000/6 mo,Luxury travel perks,HNI
+CC233,USA,Citi Premier 2,Citi,$95,Refer to Issuer,Based on Profile,0.00%,3X,Points,Travel,0.00%,No,60k pts,$4000/3 mo,3X Gas/Grocery,Travel
+CC234,USA,Capital One Venture 2,Capital One,$95,Refer to Issuer,Based on Profile,2.00%,2X,Miles,Travel,0.00%,2 Lounge/yr,75k miles,$4000/3 mo,Flat 2X miles,Simple Travel
+CC235,USA,Blue Cash Preferred 2,Amex,$95,Refer to Issuer,Based on Profile,6.00%,6.00%,Cashback,Shopping,3.00%,No,$250 bonus,$3000/6 mo,6% US Supermarkets,Families
+CC236,UK,Lloyds Choice,Lloyds,£0,Refer to Issuer,Based on Profile,0.00%,1X,Points,Rewards,2.99%,No,None,N/A,Points for every £1,General
+CC237,UK,Amex Preferred Gold 2,Amex,£0,Refer to Issuer,Based on Profile,0.00%,1X,Points,Travel,2.99%,4 Lounge/yr,20k pts,£3000/3 mo,Travel points,Travel
+CC238,Canada,Amex Cobalt 2,Amex,$155,Refer to Issuer,Based on Profile,0.00%,5X,Points,Food,2.50%,No,30k pts,N/A,5X Food & Drink,Dining
+CC239,Canada,TD Cashback Visa,TD,$0,Refer to Issuer,Based on Profile,3.00%,3.00%,Cashback,Cashback,3.50%,No,None,N/A,3% Groceries/Bills,Daily
+CC240,Australia,ANZ Rewards Platinum,ANZ,A$95,Refer to Issuer,Based on Profile,0.00%,1.5X,Points,Rewards,3.00%,No,None,N/A,Reward points per $1,General
+CC241,Singapore,DBS Altitude 2,DBS,S$194,Refer to Issuer,Based on Profile,0.00%,1.2X,Miles,Travel,3.25%,2 Lounge/yr,None,N/A,Miles never expire,Travel
+CC242,UAE,ENBD Duo,ENBD,AED 0,Refer to Issuer,Based on Profile,5.00%,5.00%,Cashback,Shopping,2.99%,No,None,AED 5000/mo,5% on Groceries/Utilities,Families
+CC243,KSA,SNB AlAhli Cashback,SNB,SAR 0,Refer to Issuer,Based on Profile,2.00%,2.00%,Cashback,Cashback,2.75%,Yes,None,N/A,2% local cashback,Everyday
+CC244,India,HDFC Tata Neu Infinity 2,HDFC,₹1499,₹1L/mo,Based on Profile,1.50%,5.00%,Cashback,Shopping,2.00%,8 domestic/yr,1499 pts,₹3L/yr,5% on Tata,E-commerce
+CC245,India,SBI Elite 2,SBI,₹4999,₹1L/mo,Based on Profile,0.50%,5X,Points,Lifestyle,1.99%,6 International/yr,₹5000 voucher,₹10L/yr,Elite benefits,Luxury
+CC246,India,Axis Atlas 2,Axis,₹5000,₹1L/mo,Based on Profile,0.00%,5X,Miles,Travel,3.50%,8 domestic/yr,5000 miles,₹15L/yr,Travel points,Travel
+CC247,India,ICICI Sapphiro 2,ICICI,₹6500,₹1.5L/mo,Based on Profile,1.00%,4X,Points,Lifestyle,3.50%,Unlimited,Vouchers ₹9000,₹10L/yr,BOGO Movies,Entertainment
+CC248,India,IDFC First Wealth 2,IDFC,₹0,₹3L/mo,Based on Profile,0.00%,10X,Points,Premium,1.50%,Unlimited,None,N/A,Premium perks,High spenders
+CC249,India,Amex MRCC 2,Amex,₹1000,₹6L/yr,Based on Profile,0.00%,1X,Points,Rewards,3.50%,No,2000 pts,₹1.5L/yr,Bonus monthly points,Points
+CC250,India,HDFC Regalia Gold 2,HDFC,₹2500,₹1L/mo,Based on Profile,0.00%,4X,Points,Lifestyle,2.00%,12 domestic/yr,₹2500 voucher,₹4L/yr,Lifestyle rewards,Lifestyle
+CC251,USA,Chase Freedom Flex 2,Chase,$0,Refer to Issuer,Based on Profile,1.00%,5.00%,Cashback,Cashback,3.00%,No,$200 bonus,N/A,5% Rotating categories,Strategic
+CC252,USA,BofA Customized Cash 2,BofA,$0,Refer to Issuer,Based on Profile,1.00%,3.00%,Cashback,Cashback,3.00%,No,$200 bonus,N/A,3% Category choice,Custom
+CC253,India,HDFC Swiggy 2,HDFC,₹500,₹25k/mo,Based on Profile,1.00%,10.00%,Cashback,Food,3.50%,No,Swiggy One,₹2L/yr,10% on Swiggy,Foodies
+CC254,India,SBI Prime 2,SBI,₹2999,₹60k/mo,Based on Profile,0.50%,10X,Points,Lifestyle,3.50%,8 domestic/yr,3000 pts,₹3L/yr,Trident benefits,Lifestyle
+CC255,India,Axis Vistara Infinite 2,Axis,₹10000,₹2L/mo,Based on Profile,0.00%,6X,Miles,Travel,3.50%,Unlimited,Business ticket,₹12L/yr,Business class flights,Airlines
+CC256,USA,Wells Fargo Autograph 2,Wells Fargo,$0,Refer to Issuer,Based on Profile,0.00%,3X,Points,Lifestyle,0.00%,No,20k pts,N/A,3X Dining/Travel,Value
+CC257,India,Marriott Bonvoy HDFC 2,HDFC,₹3000,₹1L/mo,Based on Profile,0.00%,8X,Points,Travel,3.50%,12 domestic/yr,Elite status,₹15L/yr,Free night award,Hotels
+CC258,India,Kotak White 2,Kotak,₹3000,₹2L/mo,Based on Profile,0.00%,Pass,Rewards,Lifestyle,3.50%,8 domestic/yr,None,₹12L/yr,White Pass vouchers,High spenders
+CC259,India,Standard Chartered Smart 2,SCB,₹499,₹25k/mo,Based on Profile,2.00%,2.00%,Cashback,Online,3.50%,No,None,₹1.2L/yr,Online cashback,E-commerce
+CC260,India,Yes Bank BYOC 2,Yes Bank,₹0,₹35k/mo,Based on Profile,10.00%,10.00%,Cashback,Custom,3.50%,No,None,N/A,Customized categories,Gen Z

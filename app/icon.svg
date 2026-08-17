@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="CardPilot">
+  <rect width="512" height="512" rx="96" fill="#10211a"/>
+  <g transform="translate(256 268)">
+    <rect x="-140" y="-112" width="280" height="176" rx="22" fill="#136540" transform="rotate(-11)"/>
+    <g transform="rotate(6)">
+      <rect x="-140" y="-92" width="280" height="176" rx="22" fill="#1a8a53"/>
+      <rect x="-140" y="-40" width="280" height="34" fill="#10211a"/>
+    </g>
+  </g>
+</svg>

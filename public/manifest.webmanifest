@@ -1,0 +1,29 @@
+{
+  "name": "CardPilot",
+  "short_name": "CardPilot",
+  "description": "Which card to pull out, worked out before you reach the front of the line.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f1f3f2",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icons/card-stack.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/card-stack.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "My wallet", "url": "/cards" },
+    { "name": "Settings", "url": "/settings" }
+  ]
+}
