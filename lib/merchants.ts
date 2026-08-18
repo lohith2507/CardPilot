@@ -15,6 +15,9 @@ import { isNvidiaConfigured, nvidiaJsonCompletion } from "@/lib/nvidia";
 
 export { normalizeQuery, matchScore };
 
+const LOOKUP_TTL_MS = 15 * 60 * 1000;
+const merchantLookupCache = new Map<string, { expiresAt: number; value: ResolvedMerchant }>();
+
 function canonical(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -100,6 +103,11 @@ export async function resolveMerchant(db: Db, query: string): Promise<ResolvedMe
   const normalized = normalizeQuery(query);
   if (!normalized) return null;
 
+  const cached = merchantLookupCache.get(normalized);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+
   const all = await db.select().from(s.merchants);
   const best = bestMatch(all, normalized);
 
@@ -114,14 +122,16 @@ export async function resolveMerchant(db: Db, query: string): Promise<ResolvedMe
       best.merchant.mcc,
       mccLabel(best.merchant.mcc),
     );
-    return {
+    const local = {
       merchant: best.merchant,
       source: "cache",
       confidence: 1,
       summary: blurb.summary,
       highlight: blurb.highlight,
       sources: blurb.sources,
-    };
+    } satisfies ResolvedMerchant;
+    merchantLookupCache.set(normalized, { expiresAt: Date.now() + LOOKUP_TTL_MS, value: local });
+    return local;
   }
 
   let facts: MerchantWebFacts = { text: "", sources: [] };
@@ -135,7 +145,9 @@ export async function resolveMerchant(db: Db, query: string): Promise<ResolvedMe
   if (!isPlausibleAlias(normalized, resolved.canonicalName)) {
     resolved.canonicalName = displayMerchantName(normalized);
   }
-  return persistResolution(db, normalized, resolved, all, facts);
+  const final = await persistResolution(db, normalized, resolved, all, facts);
+  merchantLookupCache.set(normalized, { expiresAt: Date.now() + LOOKUP_TTL_MS, value: final });
+  return final;
 }
 
 async function resolveFromFacts(query: string, facts: MerchantWebFacts): Promise<Resolution> {

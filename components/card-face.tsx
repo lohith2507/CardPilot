@@ -1,3 +1,4 @@
+import { cardArtForSlug } from "@/lib/card-art";
 import { cn } from "@/lib/utils";
 
 const NETWORK_MARK: Record<string, string> = {
@@ -8,6 +9,8 @@ const NETWORK_MARK: Record<string, string> = {
 };
 
 export type CardFaceProps = {
+  slug?: string | null;
+  artUrl?: string | null;
   issuer: string;
   product: string;
   network: string;
@@ -25,6 +28,8 @@ export type CardFaceProps = {
  * arm's length, with its rate set into the face.
  */
 export function CardFace({
+  slug,
+  artUrl,
   issuer,
   product,
   network,
@@ -36,6 +41,8 @@ export function CardFace({
 }: CardFaceProps) {
   const from = colorFrom ?? "#2b3547";
   const to = colorTo ?? "#141b26";
+  const resolvedArt = artUrl ?? cardArtForSlug(slug);
+  const hasArt = Boolean(resolvedArt);
 
   return (
     <div
@@ -46,6 +53,21 @@ export function CardFace({
       )}
       style={{ background: `linear-gradient(145deg, ${from} 0%, ${to} 100%)` }}
     >
+      {hasArt ? (
+        <>
+          <img
+            src={resolvedArt ?? ""}
+            alt={`${issuer} ${product} card art`}
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-white/10"
+          />
+        </>
+      ) : null}
+
       {/* Light catching the top-left corner, the way a real card does. */}
       <div
         aria-hidden
@@ -56,13 +78,13 @@ export function CardFace({
         }}
       />
 
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">
+      <p className="relative text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">
         {issuer}
       </p>
-      <p className="mt-0.5 text-xl font-semibold text-white">{product}</p>
+      <p className="relative mt-0.5 text-xl font-semibold text-white">{product}</p>
 
       {headline ? (
-        <div className="mt-7 flex items-end justify-between gap-3">
+        <div className="relative mt-7 flex items-end justify-between gap-3">
           <div>
             <p className="numeral text-[3.25rem] font-semibold leading-none text-white">
               {headline}
@@ -76,7 +98,7 @@ export function CardFace({
           </p>
         </div>
       ) : (
-        <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
+        <p className="relative mt-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
           {NETWORK_MARK[network] ?? network}
         </p>
       )}
@@ -109,21 +131,35 @@ export function CardSliver({
 }
 
 export function CardSwatch({
+  slug,
+  artUrl,
   colorFrom,
   colorTo,
   className,
 }: {
+  slug?: string | null;
+  artUrl?: string | null;
   colorFrom: string | null;
   colorTo: string | null;
   className?: string;
 }) {
+  const resolvedArt = artUrl ?? cardArtForSlug(slug);
   return (
     <span
       aria-hidden
-      className={cn("h-9 w-6 shrink-0 rounded-md ring-1 ring-inset ring-white/20", className)}
+      className={cn("relative h-9 w-6 shrink-0 overflow-hidden rounded-md ring-1 ring-inset ring-white/20", className)}
       style={{
         background: `linear-gradient(145deg, ${colorFrom ?? "#2b3547"} 0%, ${colorTo ?? "#141b26"} 100%)`,
       }}
-    />
+    >
+      {resolvedArt ? (
+        <img
+          src={resolvedArt}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+        />
+      ) : null}
+    </span>
   );
 }

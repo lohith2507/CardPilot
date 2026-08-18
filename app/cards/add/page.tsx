@@ -19,6 +19,7 @@ export default async function AddCardPage() {
     network: entry.card.network,
     colorFrom: entry.card.colorFrom,
     colorTo: entry.card.colorTo,
+    artUrl: null,
     inWallet: entry.inWallet,
     annualFeeCents: entry.card.annualFeeCents,
     baseRate: entry.card.baseRate,

@@ -1,5 +1,6 @@
 import type { CatalogEntry } from "@/lib/catalog";
 import type { CardView, RuleView } from "@/components/wallet";
+import { cardArtForSlug } from "@/lib/card-art";
 
 /** Flattens a catalog entry into the plain shape the client components render. */
 export function toCardView(entry: CatalogEntry): CardView {
@@ -22,6 +23,7 @@ export function toCardView(entry: CatalogEntry): CardView {
 
   return {
     cardId: entry.card.id,
+    slug: entry.card.slug,
     userCardId: entry.userCardId,
     inWallet: entry.inWallet,
     issuer: entry.card.issuer,
@@ -29,6 +31,7 @@ export function toCardView(entry: CatalogEntry): CardView {
     network: entry.card.network,
     colorFrom: entry.card.colorFrom,
     colorTo: entry.card.colorTo,
+    artUrl: cardArtForSlug(entry.card.slug),
     annualFeeCents: entry.card.annualFeeCents,
     baseRate: entry.card.baseRate,
     fxFeePct: entry.card.fxFeePct,

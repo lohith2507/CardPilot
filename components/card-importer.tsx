@@ -316,6 +316,8 @@ function CatalogPickCard({
   return (
     <div className="overflow-hidden rounded-card border border-line/70 bg-surface shadow-card">
       <CardFace
+        slug={hit.slug}
+        artUrl={hit.artUrl}
         issuer={hit.issuer}
         product={hit.product}
         network={hit.network}

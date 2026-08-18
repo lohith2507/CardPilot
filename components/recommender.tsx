@@ -431,6 +431,7 @@ function Result({
             />
           ))}
           <CardFace
+            slug={winner.card.slug}
             issuer={winner.card.issuer}
             product={winner.card.product}
             network={winner.card.network}
@@ -513,7 +514,7 @@ function RunnerUp({ score, rank, winner }: { score: CardScore; rank: number; win
   return (
     <li className="flex items-center gap-3 rounded-xl border border-line/70 bg-surface px-3.5 py-3 shadow-card">
       <span className="numeral w-4 shrink-0 text-xs text-muted">{rank}</span>
-      <CardSwatch colorFrom={score.card.colorFrom} colorTo={score.card.colorTo} />
+      <CardSwatch slug={score.card.slug} colorFrom={score.card.colorFrom} colorTo={score.card.colorTo} />
       <div className="min-w-0 flex-1">
         <p
           className={cn(

@@ -25,6 +25,7 @@ export type RuleView = {
 
 export type CardView = {
   cardId: number;
+  slug: string;
   userCardId: number | null;
   inWallet: boolean;
   issuer: string;
@@ -32,6 +33,7 @@ export type CardView = {
   network: string;
   colorFrom: string | null;
   colorTo: string | null;
+  artUrl: string | null;
   annualFeeCents: number;
   baseRate: number;
   fxFeePct: number;
@@ -106,7 +108,7 @@ function CardRow({ card }: { card: CardView }) {
     <li>
       <Panel className="space-y-4">
         <div className="flex items-start gap-3">
-          <CardSwatch colorFrom={card.colorFrom} colorTo={card.colorTo} className="mt-0.5" />
+          <CardSwatch slug={card.slug} artUrl={card.artUrl} colorFrom={card.colorFrom} colorTo={card.colorTo} className="mt-0.5" />
           <div className="min-w-0 flex-1">
             <Eyebrow>{card.issuer}</Eyebrow>
             <p className="text-lg font-semibold leading-tight">{card.product}</p>
@@ -202,7 +204,7 @@ function CatalogRow({ card }: { card: CardView }) {
 
   return (
     <li className="flex items-center gap-3 rounded-xl border border-line/70 bg-surface px-3.5 py-3 shadow-card">
-      <CardSwatch colorFrom={card.colorFrom} colorTo={card.colorTo} />
+      <CardSwatch slug={card.slug} artUrl={card.artUrl} colorFrom={card.colorFrom} colorTo={card.colorTo} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-ink">{card.product}</p>
         <p className="truncate text-xs text-muted">

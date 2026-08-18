@@ -441,7 +441,7 @@ function SubField({ label, children }: { label: string; children: React.ReactNod
 function CardHeading({ card }: { card: CardView }) {
   return (
     <div className="flex items-center gap-3">
-      <CardSwatch colorFrom={card.colorFrom} colorTo={card.colorTo} />
+      <CardSwatch slug={card.slug} artUrl={card.artUrl} colorFrom={card.colorFrom} colorTo={card.colorTo} />
       <div className="min-w-0">
         <Eyebrow>{card.issuer}</Eyebrow>
         <p className="truncate text-base font-semibold leading-tight">{card.product}</p>

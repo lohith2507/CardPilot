@@ -1,3 +1,5 @@
+import { cardArtForSlug } from "@/lib/card-art";
+
 /**
  * Browseable product list for the add-card screen. Seeded catalogue cards
  * overlay these when present; entries without a matching DB row still appear
@@ -11,6 +13,7 @@ export type DirectoryCard = {
   network: "visa" | "mastercard" | "amex" | "discover";
   colorFrom: string;
   colorTo: string;
+  artUrl?: string | null;
   /** Used when looking the card up on the web. */
   lookupName: string;
 };
@@ -202,6 +205,7 @@ export type CatalogPick = {
   network: string;
   colorFrom: string | null;
   colorTo: string | null;
+  artUrl: string | null;
   inWallet: boolean;
   annualFeeCents: number;
   baseRate: number;
@@ -215,6 +219,7 @@ export type SearchHit = {
   network: string;
   colorFrom: string;
   colorTo: string;
+  artUrl: string | null;
   lookupName: string;
   /** Present when this card already lives in the local catalogue. */
   cardId: number | null;
@@ -241,6 +246,7 @@ export function searchCards(query: string, catalog: CatalogPick[]): SearchHit[] 
       network: local?.network ?? entry.network,
       colorFrom: local?.colorFrom ?? entry.colorFrom,
       colorTo: local?.colorTo ?? entry.colorTo,
+      artUrl: local?.artUrl ?? entry.artUrl ?? cardArtForSlug(entry.slug),
       lookupName: entry.lookupName,
       cardId: local?.cardId ?? null,
       inWallet: local?.inWallet ?? false,
@@ -262,6 +268,7 @@ export function searchCards(query: string, catalog: CatalogPick[]): SearchHit[] 
       network: local.network,
       colorFrom: local.colorFrom ?? "#2b3547",
       colorTo: local.colorTo ?? "#141b26",
+      artUrl: local.artUrl ?? cardArtForSlug(local.slug),
       lookupName: `${local.issuer} ${local.product}`,
       cardId: local.cardId,
       inWallet: local.inWallet,
