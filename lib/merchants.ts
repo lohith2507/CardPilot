@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "@/db";
 import * as s from "@/db/schema";
-import { MODEL_FAST, strictObject, structuredCompletion } from "@/lib/groq";
+import { GroqRateLimitError, MODEL_FAST, strictObject, structuredCompletion } from "@/lib/groq";
 import { MCC_REFERENCE, mccLabel } from "@/lib/mcc";
 import {
   buildMerchantBlurb,
@@ -95,9 +95,9 @@ export type ResolvedMerchant = {
 
 /**
  * Checks the local merchant table first so repeat lookups are instant and free,
- * then searches the web for unknown names and maps that to an MCC. Groq does
- * the web search; NVIDIA (when configured) turns snippets into JSON so the two
- * calls can run on different providers.
+ * then searches the web for unknown names and maps that to an MCC. LangSearch
+ * does the web search (DuckDuckGo / Groq if that key is missing); Groq turns
+ * snippets into JSON. NVIDIA is a slow fallback only.
  */
 export async function resolveMerchant(db: Db, query: string): Promise<ResolvedMerchant | null> {
   const normalized = normalizeQuery(query);
@@ -153,27 +153,29 @@ export async function resolveMerchant(db: Db, query: string): Promise<ResolvedMe
 async function resolveFromFacts(query: string, facts: MerchantWebFacts): Promise<Resolution> {
   const user = buildResolutionUser(query, facts);
 
-  if (isNvidiaConfigured()) {
-    try {
-      const raw = await nvidiaJsonCompletion({
-        system: `${RESOLUTION_SYSTEM}\nReply with a single JSON object matching the fields: canonicalName, mcc, category, confidence, networkExclusions, codingNote.`,
-        user,
-      });
-      return resolutionSchema.parse(raw);
-    } catch {
-      // Groq constrained decoding is the fallback.
-    }
+  try {
+    return await structuredCompletion({
+      model: MODEL_FAST,
+      system: RESOLUTION_SYSTEM,
+      user,
+      schemaName: "merchant_resolution",
+      schema: RESOLUTION_JSON_SCHEMA,
+      validator: resolutionSchema,
+      maxTokens: 900,
+    });
+  } catch (err) {
+    if (err instanceof GroqRateLimitError) throw err;
   }
 
-  return structuredCompletion({
-    model: MODEL_FAST,
-    system: RESOLUTION_SYSTEM,
-    user,
-    schemaName: "merchant_resolution",
-    schema: RESOLUTION_JSON_SCHEMA,
-    validator: resolutionSchema,
-    maxTokens: 900,
-  });
+  if (isNvidiaConfigured()) {
+    const raw = await nvidiaJsonCompletion({
+      system: `${RESOLUTION_SYSTEM}\nReply with a single JSON object matching the fields: canonicalName, mcc, category, confidence, networkExclusions, codingNote.`,
+      user,
+    });
+    return resolutionSchema.parse(raw);
+  }
+
+  throw new Error("Could not map that merchant from the web findings.");
 }
 
 async function persistResolution(

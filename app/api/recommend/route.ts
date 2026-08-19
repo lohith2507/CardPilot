@@ -7,6 +7,8 @@ import { resolveUserId } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/** Unknown merchants need a web search plus a structured MCC map. */
+export const maxDuration = 120;
 
 const bodySchema = z.object({
   query: z.string().min(1, "Type where you are."),
@@ -25,7 +27,10 @@ export async function POST(request: Request) {
     const db = await getDb();
     const result = await recommend(db, userId, parsed.data);
     if (!result) {
-      return NextResponse.json({ error: "No merchant matched that name." }, { status: 404 });
+      return NextResponse.json(
+        { error: `Could not find what “${parsed.data.query.trim()}” is. Try the full store or restaurant name.` },
+        { status: 404 },
+      );
     }
     return NextResponse.json(result);
   } catch (err) {

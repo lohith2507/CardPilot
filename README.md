@@ -64,15 +64,13 @@ exhaustively in `lib/engine/score.test.ts`. It handles, in order:
 5. Subtract the foreign transaction fee when you're abroad.
 6. Add the marginal value of an open signup bonus, which usually wins outright.
 
-Groq is used at exactly two edges, both with `strict: true` JSON schemas so the shape of the
-output is guaranteed by constrained decoding, and both validated again with Zod:
+Web lookup and structured extraction are separate on purpose:
 
-- **Merchant lookup** (`openai/gpt-oss-20b`) turns a name it has never seen into a category
-  code, then writes it to the `merchants` table. Each merchant costs one call, ever.
-- **Card lookup** (`groq/compound-mini` plus a direct fetch of the issuer page) finds current
-  terms when you type a card name. The page text is then extracted by `openai/gpt-oss-120b`
-  into earn rules, which you review before anything is saved. Paste and PDF still work as a
-  fallback when the issuer's site is a blank JavaScript shell.
+- **Web search** uses [LangSearch](https://github.com/langsearch-ai/langsearch) when `LANGSEARCH_API_KEY` is set (hybrid search, then semantic rerank). Groq `compound-mini` and DuckDuckGo lite are fallbacks.
+- **Merchant MCC mapping** (`openai/gpt-oss-20b`, or NVIDIA NIM when configured) turns those snippets into a category code, then writes it to the `merchants` table. Each merchant costs one extraction call, ever.
+- **Card lookup** fetches the issuer page from LangSearch (or Groq) URLs; `openai/gpt-oss-120b` extracts earn rules, which you review before anything is saved. Paste and PDF still work as a fallback when the issuer's site is a blank JavaScript shell.
+
+Groq extraction uses `strict: true` JSON schemas so the shape is guaranteed by constrained decoding, and is validated again with Zod.
 
 Neither is trusted blindly. A rule that comes back with no category codes would silently
 never pay out, so `inferMccCodes` recovers them from the category name and the review screen
@@ -114,7 +112,8 @@ flowchart TB
   end
 
   subgraph External["External (draft/lookup only)"]
-    Groq["Groq API\n(web search + JSON extract)"]
+    Groq["Groq JSON extract"]
+    LangSearch["LangSearch\nweb search + rerank"]
     Nvidia["NVIDIA NIM\n(merchant MCC mapping)"]
   end
 
@@ -130,8 +129,10 @@ flowchart TB
   Recommend --> Merchants
   Merchants --> Engine
   Wallet --> Engine
+  Merchants --> LangSearch
   Merchants --> Groq
   Merchants --> Nvidia
+  Extract --> LangSearch
   Extract --> Groq
   Snapshot --> Offline
   UI --> Offline
@@ -216,7 +217,7 @@ flowchart TD
   Q["User types merchant name"] --> Local["searchMerchants()\nfuzzy match on DB"]
   Local --> Confident{"Score ≥ 80 AND\nplausible alias?"}
   Confident -->|Yes| ReturnLocal["Return local merchants"]
-  Confident -->|No, query ≥ 3 chars| Web["searchMerchantWeb()\nGroq web search"]
+  Confident -->|No, query ≥ 3 chars| Web["searchMerchantWeb()\nLangSearch → Groq → DDG"]
   Web --> Map["NVIDIA or Groq JSON\n→ MCC + category"]
   Map --> Cache["Upsert merchant in DB"]
   Cache --> ReturnAI["Return with lookedUp flag"]
@@ -246,7 +247,7 @@ No network, no DB inside `lib/engine/`.
 ```mermaid
 flowchart TD
   Add["/cards/add"] --> Input{"Input type"}
-  Input -->|Card name| Lookup["lookupCardTerms()\nGroq web search"]
+  Input -->|Card name| Lookup["lookupCardTerms()\nLangSearch then issuer page"]
   Input -->|Paste text| Text["Raw terms text"]
   Input -->|PDF upload| PDF["pdfToText()"]
   Lookup --> Extract["extractCardFromText()\nGroq structured JSON"]
@@ -364,6 +365,7 @@ to correct cap tracking.
    | --- | --- |
    | `DATABASE_URL` | Neon connection string. Its presence switches the app off PGlite. |
    | `GROQ_API_KEY` | Your rotated key. |
+   | `LANGSEARCH_API_KEY` | Optional. [LangSearch](https://langsearch.com/api-keys) web search + rerank for unknown merchants and card lookup. |
    | `AUTH_SECRET` | Signs session cookies and turns the sign-in gate on. |
    | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional Google sign-in. |
    | `GOOGLE_ALLOWED_EMAILS` | Optional extra Google restriction (users table is still required). |

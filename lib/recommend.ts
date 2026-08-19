@@ -42,11 +42,12 @@ export async function recommend(
   input: RecommendInput,
 ): Promise<RecommendResult | null> {
   const at = input.at ?? new Date();
+  const walletPromise = loadWallet(db, userId, at);
   const resolved = await resolveMerchant(db, input.query);
   if (!resolved) return null;
 
   const { merchant } = resolved;
-  const wallet = await loadWallet(db, userId, at);
+  const wallet = await walletPromise;
 
   const ctx: PurchaseContext = {
     mcc: merchant.mcc,

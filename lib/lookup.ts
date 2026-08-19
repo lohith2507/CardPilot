@@ -1,4 +1,5 @@
 import { GroqNotConfiguredError, GroqRateLimitError, searchCompletion } from "@/lib/groq";
+import { searchWithLangSearch } from "@/lib/langsearch";
 
 /**
  * Looking a card up by name is two steps on purpose. Groq's search model can
@@ -169,6 +170,14 @@ const defaultIO: LookupIO = {
 };
 
 async function searchForCard(name: string): Promise<{ text: string; sources: string[] }> {
+  const lang = await searchWithLangSearch(
+    `${name} credit card official rewards issuer`,
+    `Official issuer product page and current rewards terms for the "${name}" credit card.`,
+  );
+  if (lang?.sources.length || lang?.text) {
+    return { text: lang.text, sources: rankSources([...lang.sources, ...extractUrls(lang.text)]) };
+  }
+
   try {
     const found = await searchCompletion({
       system: SEARCH_SYSTEM,

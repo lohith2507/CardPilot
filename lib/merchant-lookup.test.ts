@@ -1,14 +1,63 @@
 import { describe, expect, it } from "vitest";
 import {
+  factsFromLangSearchPages,
+  orderByRerankIndexes,
+  parseLangSearchPages,
+  parseRerankIndexes,
+} from "./langsearch";
+import {
   buildMerchantBlurb,
   buildResolutionUser,
   clipFacts,
   clipToSentences,
   merchantSearchQuery,
+  overviewFromWebFacts,
   sourceLabel,
 } from "./merchant-lookup";
 import { defaultLookupNote } from "./merchants";
 import { parseJsonObject } from "./nvidia";
+
+describe("langsearch result parsing", () => {
+  it("reads Bing-shaped webPages.value payloads", () => {
+    const pages = parseLangSearchPages({
+      code: 200,
+      data: {
+        webPages: {
+          value: [
+            {
+              name: "Mayuri Indian Grocery",
+              url: "https://example.com/mayuri",
+              snippet: "Indian grocery in the Bay Area",
+              summary: "Mayuri is an Indian grocery store.",
+            },
+            { name: "skip", url: "not-a-url", snippet: "x" },
+          ],
+        },
+      },
+    });
+    expect(pages).toHaveLength(1);
+    expect(pages[0]!.url).toBe("https://example.com/mayuri");
+  });
+
+  it("orders pages by rerank indexes without dropping leftovers", () => {
+    expect(orderByRerankIndexes(["a", "b", "c"], [2, 0])).toEqual(["c", "a", "b"]);
+    expect(parseRerankIndexes({ results: [{ index: 1 }, { index: 0 }] })).toEqual([1, 0]);
+  });
+
+  it("joins titles and summaries into lookup facts", () => {
+    const facts = factsFromLangSearchPages([
+      {
+        name: "Desi Adda",
+        url: "https://example.com/desi",
+        snippet: "",
+        summary: "Indian restaurant in Redmond.",
+      },
+    ]);
+    expect(facts.text).toMatch(/Desi Adda/);
+    expect(facts.text).toMatch(/Redmond/);
+    expect(facts.sources).toEqual(["https://example.com/desi"]);
+  });
+});
 
 describe("merchant web lookup helpers", () => {
   it("asks search engines for business type, not just the raw name", () => {
@@ -46,15 +95,43 @@ describe("merchant web lookup helpers", () => {
     });
     expect(blurb.summary).toMatch(/Desi Adda/i);
     expect(blurb.summary).toMatch(/Indian restaurant/i);
+    expect(blurb.summary).toMatch(/MCC 5812/);
     expect(blurb.highlight).toBe("Restaurant");
     expect(blurb.sources).toHaveLength(1);
+  });
+
+  it("ignores search-junk snippets and keeps a readable overview", () => {
+    const blurb = buildMerchantBlurb("Mayuri", "Grocery", 5411, "Grocery stores", {
+      text: [
+        "Mayuri Indian Grocery Fremont — mayuri indian grocery fremont hours menu reviews.",
+        "Yelp — people also search grocery OR restaurant OR supermarket OR store MCC.",
+        "Privacy Policy — we use cookies to improve your experience on this site.",
+        "Bay Area Eats — Mayuri is an Indian grocery store in Fremont known for spices and snacks.",
+      ].join("\n\n"),
+      sources: ["https://example.com/mayuri"],
+    });
+    expect(blurb.summary).not.toMatch(/hours menu/i);
+    expect(blurb.summary).not.toMatch(/cookies/i);
+    expect(blurb.summary).not.toMatch(/ OR /);
+    expect(blurb.summary).toMatch(/Indian grocery/i);
+    expect(blurb.summary).toMatch(/5411/);
   });
 
   it("falls back to a category template when there are no web facts", () => {
     const blurb = buildMerchantBlurb("McDonald's", "Fast food", 5814, "Fast food");
     expect(blurb.summary).toMatch(/McDonald's/);
     expect(blurb.summary).toMatch(/5814/);
+    expect(blurb.summary).toMatch(/fast food/i);
     expect(blurb.sources).toEqual([]);
+  });
+
+  it("sentence-cases lowercase search snippets", () => {
+    expect(
+      overviewFromWebFacts(
+        "Mayuri",
+        "Local Guide — mayuri is an indian grocery store in the bay area.",
+      ),
+    ).toMatch(/^Mayuri is an indian grocery store in the bay area\./i);
   });
 
   it("shortens source URLs to readable hostnames", () => {

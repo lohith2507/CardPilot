@@ -9,6 +9,7 @@ import { MerchantOverview, MerchantOverviewSkeleton } from "@/components/merchan
 import { Receipt, ReceiptNote, ReceiptRow } from "@/components/receipt";
 import { Button, Eyebrow, Input, Panel, Pill } from "@/components/ui";
 import type { CardScore } from "@/lib/engine/types";
+import { CONFIDENT_MATCH, isPlausibleAlias, matchScore } from "@/lib/merchant-match";
 import { readSnapshot, recommendOffline, refreshSnapshot, rerankLocal } from "@/lib/offline";
 import type { RecommendResult } from "@/lib/recommend";
 import { cn, formatCents, formatPct } from "@/lib/utils";
@@ -50,6 +51,16 @@ export function Recommender({
 
   const suggestionsOpen = showSuggestions && query.trim().length >= 2;
   const visibleSuggestions = suggestionsOpen ? suggestions : [];
+  const topSuggestion = visibleSuggestions[0];
+  const localIsSure =
+    Boolean(topSuggestion) &&
+    matchScore(
+      { name: topSuggestion.name, slug: topSuggestion.slug, aliases: [] },
+      query,
+    ) >= CONFIDENT_MATCH &&
+    isPlausibleAlias(query, topSuggestion.name);
+  const showLookupRow =
+    suggestionsOpen && !suggestLoading && query.trim().length >= 2 && !localIsSure;
 
   useEffect(() => {
     if (!suggestionsOpen) {
@@ -92,10 +103,18 @@ export function Recommender({
 
       const id = ++requestId.current;
       setLastQuery(term);
-      setLoading(true);
       setError(null);
       setShowSuggestions(false);
       inputRef.current?.blur();
+
+      const snap = readSnapshot();
+      const snapshotHit = snap ? recommendOffline(snap, term, cents, foreign) : null;
+      if (snapshotHit) {
+        setResult(snapshotHit);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
 
       try {
         const res = await fetch("/api/recommend", {
@@ -107,6 +126,7 @@ export function Recommender({
         if (id !== requestId.current) return;
 
         if (!res.ok) {
+          if (snapshotHit) return;
           setError(data.error ?? "Could not compare your cards for that place.");
           setResult(null);
           return;
@@ -209,12 +229,12 @@ export function Recommender({
             />
           ) : null}
 
-          {visibleSuggestions.length > 0 || suggestLoading ? (
+          {visibleSuggestions.length > 0 || suggestLoading || showLookupRow ? (
             <ul className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-line bg-surface shadow-lifted">
               {suggestLoading ? (
                 <li className="flex items-center gap-2.5 px-4 py-3.5 text-sm text-muted">
                   <Loader2 size={16} className="animate-spin text-brand" aria-hidden />
-                  Searching…
+                  Searching saved places…
                 </li>
               ) : null}
               {visibleSuggestions.map((m) => (
@@ -236,6 +256,26 @@ export function Recommender({
                   </button>
                 </li>
               ))}
+              {showLookupRow ? (
+                <li>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => void run(query, amountCents, isForeign)}
+                    className="flex w-full items-center gap-3 border-t border-line px-4 py-3.5 text-left transition-colors hover:bg-raised"
+                  >
+                    <Globe size={16} className="shrink-0 text-brand" aria-hidden />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-ink">
+                        Look up “{query.trim()}”
+                      </span>
+                      <span className="block text-[11px] text-muted">
+                        Search the web for this store or restaurant
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ) : null}
             </ul>
           ) : null}
         </div>
@@ -269,6 +309,16 @@ export function Recommender({
             <Globe size={15} aria-hidden />
             Abroad
           </button>
+
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!query.trim() || loading}
+            className="shrink-0 rounded-xl px-4 py-3"
+          >
+            {loading ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <Search size={15} aria-hidden />}
+            Search
+          </Button>
         </div>
       </form>
 

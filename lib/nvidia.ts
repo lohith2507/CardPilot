@@ -40,7 +40,7 @@ export async function nvidiaJsonCompletion(options: {
         { role: "user", content: options.user },
       ],
     }),
-    signal: AbortSignal.timeout(25_000),
+    signal: AbortSignal.timeout(8_000),
   });
 
   if (!res.ok) {

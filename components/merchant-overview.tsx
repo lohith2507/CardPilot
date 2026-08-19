@@ -47,11 +47,9 @@ export function MerchantOverview({
       )}
     >
       <div className="border-b border-line/50 bg-gradient-to-br from-raised/80 to-surface px-5 py-4">
-        {query ? (
-          <p className="mb-3 text-right">
-            <span className="inline-flex rounded-full border border-line bg-canvas px-3 py-1 text-xs font-medium text-muted">
-              {query}
-            </span>
+        {query && query.trim().toLowerCase() !== merchant.name.toLowerCase() ? (
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-muted">
+            You searched “{query.trim()}”
           </p>
         ) : null}
 
@@ -64,21 +62,26 @@ export function MerchantOverview({
         </div>
 
         {sources.length > 0 ? (
-          <ul className="mt-4 flex flex-wrap gap-2">
-            {sources.map((url) => (
-              <li key={url}>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-medium text-muted transition-colors hover:border-brand/30 hover:text-brand"
-                >
-                  <ExternalLink size={11} aria-hidden />
-                  {sourceLabel(url)}
-                </a>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-4">
+            <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-muted">
+              From public pages
+            </p>
+            <ul className="flex flex-wrap gap-2">
+              {sources.map((url) => (
+                <li key={url}>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-medium text-muted transition-colors hover:border-brand/30 hover:text-brand"
+                  >
+                    <ExternalLink size={11} aria-hidden />
+                    {sourceLabel(url)}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
       </div>
 
