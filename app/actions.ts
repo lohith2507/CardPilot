@@ -275,3 +275,90 @@ export async function findRuleByCardAndLabel(cardId: number, label: string) {
     .limit(1);
   return row ?? null;
 }
+
+export async function setStatementDay(userCardId: number, statementDay: number | null) {
+  const userId = await resolveUserId();
+  const row = await ownedUserCard(userId, userCardId);
+  if (!row) return;
+  const day =
+    statementDay == null || !Number.isFinite(statementDay)
+      ? null
+      : Math.min(28, Math.max(1, Math.trunc(statementDay)));
+  const db = await getDb();
+  await db.update(s.userCards).set({ statementDay: day }).where(eq(s.userCards.id, userCardId));
+  revalidateAll();
+}
+
+export async function setTripMode(tripMode: boolean, tripAbroadDefault = true) {
+  const userId = await resolveUserId();
+  const db = await getDb();
+  await db
+    .update(s.users)
+    .set({ tripMode, tripAbroadDefault, updatedAt: new Date() })
+    .where(eq(s.users.id, userId));
+  revalidateAll();
+}
+
+export async function setHouseholdCode(code: string | null) {
+  const userId = await resolveUserId();
+  const db = await getDb();
+  const cleaned = code?.trim() ? code.trim().toLowerCase() : null;
+  await db
+    .update(s.users)
+    .set({ householdCode: cleaned, updatedAt: new Date() })
+    .where(eq(s.users.id, userId));
+  revalidateAll();
+}
+
+export async function toggleFavorite(merchantId: number) {
+  const userId = await resolveUserId();
+  const db = await getDb();
+  const { toggleFavoriteMerchant } = await import("@/lib/favorites");
+  const on = await toggleFavoriteMerchant(db, userId, merchantId);
+  revalidateAll();
+  return on;
+}
+
+export async function correctMerchant(input: {
+  merchantId: number;
+  mcc: number;
+  category: string;
+  networkExclusions: string[];
+  codingNote: string | null;
+}) {
+  const userId = await resolveUserId();
+  void userId;
+  const db = await getDb();
+  const mcc = Math.trunc(input.mcc);
+  if (mcc < 700 || mcc > 9999) throw new Error("MCC must be a four-digit code.");
+  await db
+    .update(s.merchants)
+    .set({
+      mcc,
+      category: input.category.trim() || "Merchant",
+      networkExclusions: input.networkExclusions,
+      codingNote: input.codingNote?.trim() || null,
+      source: "user",
+    })
+    .where(eq(s.merchants.id, input.merchantId));
+  revalidateAll();
+}
+
+export async function exportWalletAction(includeTransactions = true) {
+  const userId = await resolveUserId();
+  const db = await getDb();
+  const { exportWalletBackup } = await import("@/lib/wallet-io");
+  return exportWalletBackup(db, userId, includeTransactions);
+}
+
+export async function importWalletAction(backup: unknown) {
+  const userId = await resolveUserId();
+  const db = await getDb();
+  const { importWalletBackup } = await import("@/lib/wallet-io");
+  const parsed = backup as import("@/lib/wallet-io").WalletBackup;
+  if (!parsed || parsed.version !== 1) throw new Error("That file is not a CardPilot wallet backup.");
+  const message = await importWalletBackup(db, userId, parsed);
+  revalidateAll();
+  return message;
+}
+

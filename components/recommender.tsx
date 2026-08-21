@@ -22,6 +22,7 @@ export type MerchantChip = {
   mccLabel: string;
   category: string;
   lookedUp?: boolean;
+  favorite?: boolean;
 };
 
 type Suggestion = MerchantChip;
@@ -29,14 +30,22 @@ type Suggestion = MerchantChip;
 export function Recommender({
   recents,
   walletCount,
+  tripMode = false,
+  tripAbroadDefault = true,
 }: {
   recents: MerchantChip[];
   walletCount: number;
+  tripMode?: boolean;
+  tripAbroadDefault?: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [amount, setAmount] = useState("25");
-  const [isForeign, setIsForeign] = useState(false);
+  const [isForeign, setIsForeign] = useState(tripMode && tripAbroadDefault);
+  const [splitOn, setSplitOn] = useState(false);
+  const [splitA, setSplitA] = useState("15");
+  const [splitB, setSplitB] = useState("10");
+  const [splitMccB, setSplitMccB] = useState("5999");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -48,6 +57,9 @@ export function Recommender({
   const requestId = useRef(0);
 
   const amountCents = Math.max(1, Math.round((Number.parseFloat(amount) || 0) * 100));
+  const splitACents = Math.max(0, Math.round((Number.parseFloat(splitA) || 0) * 100));
+  const splitBCents = Math.max(0, Math.round((Number.parseFloat(splitB) || 0) * 100));
+  const effectiveCents = splitOn ? Math.max(1, splitACents + splitBCents) : amountCents;
 
   const suggestionsOpen = showSuggestions && query.trim().length >= 2;
   const visibleSuggestions = suggestionsOpen ? suggestions : [];
@@ -97,7 +109,7 @@ export function Recommender({
   }, []);
 
   const run = useCallback(
-    async (searchTerm: string, cents: number, foreign: boolean) => {
+    async (searchTerm: string, cents: number, foreign: boolean, lines?: { label: string; amountCents: number; mcc?: number }[]) => {
       const term = searchTerm.trim();
       if (!term) return;
 
@@ -120,7 +132,12 @@ export function Recommender({
         const res = await fetch("/api/recommend", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: term, amountCents: cents, isForeign: foreign }),
+          body: JSON.stringify({
+            query: term,
+            amountCents: cents,
+            isForeign: foreign,
+            lines: lines && lines.length >= 2 ? lines : undefined,
+          }),
         });
         const data = await res.json();
         if (id !== requestId.current) return;
@@ -154,18 +171,51 @@ export function Recommender({
     [],
   );
 
+  useEffect(() => {
+    if (tripMode) setIsForeign(tripAbroadDefault);
+  }, [tripMode, tripAbroadDefault]);
+
   // Amount and abroad toggle re-rank instantly in the browser — no second web lookup.
   useEffect(() => {
+    if (splitOn) return;
     setResult((prev) => {
       if (!prev) return prev;
       return rerankLocal(prev, amountCents, isForeign) ?? prev;
     });
-  }, [amountCents, isForeign]);
+  }, [amountCents, isForeign, splitOn]);
 
   const onLogged = useCallback(() => {
-    if (result) void run(result.merchant.name, amountCents, isForeign);
+    if (result) {
+      const lines =
+        splitOn && splitACents > 0 && splitBCents > 0
+          ? [
+              { label: result.merchant.category, amountCents: splitACents },
+              {
+                label: "Other",
+                amountCents: splitBCents,
+                mcc: Number.parseInt(splitMccB, 10) || 5999,
+              },
+            ]
+          : undefined;
+      void run(result.merchant.name, effectiveCents, isForeign, lines);
+    }
     router.refresh();
-  }, [result, amountCents, isForeign, run, router]);
+  }, [result, effectiveCents, isForeign, run, router, splitOn, splitACents, splitBCents, splitMccB]);
+
+  const submitSearch = () => {
+    const lines =
+      splitOn && splitACents > 0 && splitBCents > 0
+        ? [
+            { label: "Main category", amountCents: splitACents },
+            {
+              label: "Other",
+              amountCents: splitBCents,
+              mcc: Number.parseInt(splitMccB, 10) || 5999,
+            },
+          ]
+        : undefined;
+    void run(query, effectiveCents, isForeign, lines);
+  };
 
   const chips = recents.length > 0 ? recents : [];
   const hasResult = Boolean(result) || loading;
@@ -184,7 +234,7 @@ export function Recommender({
         </h1>
         {!hasResult ? (
           <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted">
-            Search any place — we look it up, explain what it is, then rank cards in your wallet
+            Search any place. We look it up, explain what it is, then rank cards in your wallet
             by the rules you saved.
           </p>
         ) : null}
@@ -193,7 +243,7 @@ export function Recommender({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void run(query, amountCents, isForeign);
+          submitSearch();
         }}
         className="space-y-3"
       >
@@ -244,7 +294,7 @@ export function Recommender({
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       setQuery(m.name);
-                      void run(m.name, amountCents, isForeign);
+                      void run(m.name, effectiveCents, isForeign);
                     }}
                     className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-raised"
                   >
@@ -261,7 +311,7 @@ export function Recommender({
                   <button
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => void run(query, amountCents, isForeign)}
+                    onClick={() => void run(query, effectiveCents, isForeign)}
                     className="flex w-full items-center gap-3 border-t border-line px-4 py-3.5 text-left transition-colors hover:bg-raised"
                   >
                     <Globe size={16} className="shrink-0 text-brand" aria-hidden />
@@ -320,13 +370,63 @@ export function Recommender({
             Search
           </Button>
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSplitOn((v) => !v)}
+            aria-pressed={splitOn}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-[11px] font-semibold",
+              splitOn ? "border-brand/30 bg-brand-soft text-brand-deep" : "border-line text-muted",
+            )}
+          >
+            Split tender
+          </button>
+          {tripMode ? (
+            <span className="rounded-full border border-brand/20 bg-brand-soft/50 px-3 py-1.5 text-[11px] font-medium text-brand-deep">
+              Trip mode on
+            </span>
+          ) : null}
+        </div>
+
+        {splitOn ? (
+          <div className="grid gap-2 rounded-xl border border-line bg-raised/40 p-3 sm:grid-cols-3">
+            <label className="text-[11px] text-muted">
+              Main $
+              <Input
+                className="mt-1 numeral py-2 text-sm"
+                value={splitA}
+                onChange={(e) => setSplitA(e.target.value.replace(/[^0-9.]/g, ""))}
+              />
+            </label>
+            <label className="text-[11px] text-muted">
+              Other $
+              <Input
+                className="mt-1 numeral py-2 text-sm"
+                value={splitB}
+                onChange={(e) => setSplitB(e.target.value.replace(/[^0-9.]/g, ""))}
+              />
+            </label>
+            <label className="text-[11px] text-muted">
+              Other MCC
+              <Input
+                className="mt-1 numeral py-2 text-sm"
+                value={splitMccB}
+                onChange={(e) => setSplitMccB(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+              />
+            </label>
+          </div>
+        ) : null}
       </form>
 
       {loading && lastQuery ? <SearchProgress query={lastQuery} /> : null}
 
       {!loading && !result && !error && chips.length > 0 ? (
         <section>
-          <Eyebrow>{recents.length > 0 ? "Recent" : "Try one"}</Eyebrow>
+          <Eyebrow>
+            {chips.some((c) => c.favorite) ? "Favorites & recent" : recents.length > 0 ? "Recent" : "Try one"}
+          </Eyebrow>
           <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
             {chips.map((m) => (
               <button
@@ -334,9 +434,12 @@ export function Recommender({
                 type="button"
                 onClick={() => {
                   setQuery(m.name);
-                  void run(m.name, amountCents, isForeign);
+                  void run(m.name, effectiveCents, isForeign);
                 }}
-                className="rounded-full border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink shadow-card transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:text-brand hover:shadow-lifted"
+                className={cn(
+                  "rounded-full border bg-surface px-4 py-2.5 text-sm font-medium shadow-card transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:text-brand hover:shadow-lifted",
+                  m.favorite ? "border-brand/40 text-brand-deep" : "border-line text-ink",
+                )}
               >
                 {m.name}
               </button>
@@ -348,7 +451,7 @@ export function Recommender({
       {walletCount === 0 && !hasResult ? (
         <Panel className="space-y-3 border-brand/20 bg-brand-soft/70">
           <p className="text-sm leading-relaxed text-ink">
-            Your wallet is empty, so there is nothing to compare. Add the cards you carry — then
+            Your wallet is empty, so there is nothing to compare. Add the cards you carry, then
             rankings use only those rules.
           </p>
           <Link
@@ -377,7 +480,14 @@ export function Recommender({
       ) : null}
 
       {result && !loading ? (
-        <Result result={result} query={lastQuery} onLogged={onLogged} walletCount={walletCount} />
+        <Result
+          result={result}
+          query={lastQuery}
+          onLogged={onLogged}
+          walletCount={walletCount}
+          tripMode={tripMode}
+          onCorrected={submitSearch}
+        />
       ) : null}
     </div>
   );
@@ -409,23 +519,28 @@ function Result({
   query,
   onLogged,
   walletCount,
+  tripMode,
+  onCorrected,
 }: {
   result: RecommendResult;
   query: string;
   onLogged: () => void;
   walletCount: number;
+  tripMode: boolean;
+  onCorrected: () => void;
 }) {
   const eligible = result.scores.filter((s) => s.eligible);
   const winner = eligible[0];
   const runnersUp = result.scores.slice(1);
+  const zeroFx = tripMode ? eligible.filter((s) => s.card.fxFeePct === 0) : [];
 
   if (walletCount === 0) {
     return (
       <div className="space-y-6 animate-slide-up">
-        <MerchantOverview result={result} query={query} />
+        <MerchantOverview result={result} query={query} onCorrected={onCorrected} />
         <Panel className="space-y-3 border-brand/20 bg-brand-soft/70">
           <p className="text-sm leading-relaxed text-ink">
-            We found this place, but your wallet is empty — add cards to see which one earns the
+            We found this place, but your wallet is empty. Add cards to see which one earns the
             most here.
           </p>
           <Link
@@ -442,12 +557,12 @@ function Result({
   if (!winner) {
     return (
       <div className="space-y-6 animate-slide-up">
-        <MerchantOverview result={result} query={query} />
+        <MerchantOverview result={result} query={query} onCorrected={onCorrected} />
         <Panel className="border-rose/20 bg-rose-soft">
           <p className="text-sm text-ink">
             None of the cards in your wallet look usable at {result.merchant.name}
             {result.merchant.networkExclusions.length > 0
-              ? ` — it typically refuses ${result.merchant.networkExclusions.join(", ")}`
+              ? `. It typically refuses ${result.merchant.networkExclusions.join(", ")}`
               : ""}
             .
           </p>
@@ -458,7 +573,38 @@ function Result({
 
   return (
     <div className="space-y-7 animate-slide-up">
-      <MerchantOverview result={result} query={query} />
+      <MerchantOverview result={result} query={query} onCorrected={onCorrected} />
+
+      {result.lineResults && result.lineResults.length >= 2 ? (
+        <Panel>
+          <Eyebrow>Split tender</Eyebrow>
+          <ul className="mt-3 space-y-2">
+            {result.lineResults.map((line) => {
+              const top = line.scores.find((s) => s.eligible);
+              return (
+                <li key={line.label} className="flex justify-between gap-3 text-sm">
+                  <span className="text-muted">
+                    {line.label} · {formatCents(line.amountCents)} · MCC {line.mcc}
+                  </span>
+                  <span className="font-medium text-ink">
+                    {top ? top.card.product : "No match"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-2 text-xs text-muted">
+            Combined tip below ranks cards by the sum of each line&apos;s estimate.
+          </p>
+        </Panel>
+      ) : null}
+
+      {tripMode && zeroFx.length > 0 ? (
+        <p className="text-xs text-muted">
+          Trip mode: {zeroFx.map((s) => s.card.product).join(", ")} have $0 FX in your wallet
+          rules.
+        </p>
+      ) : null}
 
       <section className="space-y-4">
         <div className="flex items-center gap-3">
@@ -494,14 +640,21 @@ function Result({
         </div>
       </section>
 
+      <CapProgress score={winner} />
+
       <MathPanel score={winner} amountCents={result.amountCents} />
 
-      <LogButton
-        key={`${result.merchant.id}-${result.amountCents}`}
-        result={result}
-        winner={winner}
-        onLogged={onLogged}
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <LogButton
+            key={`${result.merchant.id}-${result.amountCents}`}
+            result={result}
+            winner={winner}
+            onLogged={onLogged}
+          />
+        </div>
+        <ShareResult result={result} winner={winner} />
+      </div>
 
       {runnersUp.length > 0 ? (
         <section>
@@ -518,6 +671,54 @@ function Result({
         Not financial advice. Figures follow the rules and point values saved in Settings.
       </p>
     </div>
+  );
+}
+
+function CapProgress({ score }: { score: CardScore }) {
+  const rule = score.appliedRule;
+  if (!rule?.capAmountCents || rule.capRemainingBeforeCents == null) return null;
+  const used = rule.capAmountCents - rule.capRemainingBeforeCents;
+  const pct = Math.min(100, Math.round((used / rule.capAmountCents) * 100));
+  return (
+    <Panel>
+      <Eyebrow>Bonus cap (by your wallet rules)</Eyebrow>
+      <div className="mt-2 flex items-center justify-between text-xs text-muted">
+        <span>{rule.label}</span>
+        <span className="numeral">
+          {formatCents(used)} / {formatCents(rule.capAmountCents)}
+        </span>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-line">
+        <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="mt-2 text-[11px] text-muted">
+        About {formatCents(rule.capRemainingBeforeCents)} left before this purchase, by logged spend.
+      </p>
+    </Panel>
+  );
+}
+
+function ShareResult({ result, winner }: { result: RecommendResult; winner: CardScore }) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      onClick={async () => {
+        const text = `At ${result.merchant.name}, CardPilot ranks ${winner.card.product} first (~${formatPct(winner.effectiveRatePct)} by the rules in my wallet).`;
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: "CardPilot", text });
+            return;
+          } catch {
+            /* cancelled */
+          }
+        }
+        await navigator.clipboard.writeText(text);
+      }}
+    >
+      Share tip
+    </Button>
   );
 }
 
@@ -560,38 +761,70 @@ function MathPanel({ score, amountCents }: { score: CardScore; amountCents: numb
 
 function RunnerUp({ score, rank, winner }: { score: CardScore; rank: number; winner: CardScore }) {
   const delta = score.totalValueCents - winner.totalValueCents;
+  const [open, setOpen] = useState(false);
 
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-line/70 bg-surface px-3.5 py-3 shadow-card">
-      <span className="numeral w-4 shrink-0 text-xs text-muted">{rank}</span>
-      <CardSwatch slug={score.card.slug} colorFrom={score.card.colorFrom} colorTo={score.card.colorTo} />
-      <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            "truncate text-sm font-medium",
-            score.eligible ? "text-ink" : "text-muted line-through",
-          )}
-        >
-          {score.card.product}
-        </p>
-        <p className="truncate text-xs text-muted">
-          {score.eligible
-            ? (score.appliedRule?.label ?? "Base rate")
-            : (score.ineligibleReason ?? "Not accepted")}
-        </p>
-      </div>
-      {score.eligible ? (
-        <div className="shrink-0 text-right">
-          <p className="numeral text-sm font-semibold text-ink">
-            {formatPct(score.effectiveRatePct)}
+    <li className="rounded-xl border border-line/70 bg-surface shadow-card">
+      <button
+        type="button"
+        className="flex w-full items-center gap-3 px-3.5 py-3 text-left"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="numeral w-4 shrink-0 text-xs text-muted">{rank}</span>
+        <CardSwatch slug={score.card.slug} colorFrom={score.card.colorFrom} colorTo={score.card.colorTo} />
+        <div className="min-w-0 flex-1">
+          <p
+            className={cn(
+              "truncate text-sm font-medium",
+              score.eligible ? "text-ink" : "text-muted line-through",
+            )}
+          >
+            {score.card.product}
           </p>
-          <p className="numeral text-[11px] text-muted">
-            {delta === 0 ? "tied" : formatCents(Math.round(delta))}
+          <p className="truncate text-xs text-muted">
+            {score.eligible
+              ? (score.appliedRule?.label ?? "Base rate")
+              : (score.ineligibleReason ?? "Not accepted")}
           </p>
         </div>
-      ) : (
-        <Pill tone="rose">No</Pill>
-      )}
+        {score.eligible ? (
+          <div className="shrink-0 text-right">
+            <p className="numeral text-sm font-semibold text-ink">
+              {formatPct(score.effectiveRatePct)}
+            </p>
+            <p className="numeral text-[11px] text-muted">
+              {delta === 0 ? "tied" : formatCents(Math.round(delta))}
+            </p>
+          </div>
+        ) : (
+          <Pill tone="rose">No</Pill>
+        )}
+      </button>
+      {open ? (
+        <div className="border-t border-line px-3.5 py-3">
+          <Eyebrow>Why not this card</Eyebrow>
+          {score.eligible ? (
+            <Receipt className="mt-2">
+              {score.reasons.map((reason, i) => (
+                <ReceiptRow
+                  key={i}
+                  label={reason.label}
+                  value={reason.value}
+                  note={reason.note}
+                  tone={reason.tone ?? "default"}
+                />
+              ))}
+            </Receipt>
+          ) : (
+            <p className="mt-2 text-xs text-muted">{score.ineligibleReason}</p>
+          )}
+          {score.warnings.map((w, i) => (
+            <p key={i} className="mt-2 text-[11px] text-muted">
+              {w}
+            </p>
+          ))}
+        </div>
+      ) : null}
     </li>
   );
 }

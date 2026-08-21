@@ -69,7 +69,7 @@ function sentenceCase(text: string): string {
   const trimmed = text
     .replace(/\s+/g, " ")
     .replace(/\s*#\s*\d+\s*/g, " ")
-    .replace(/\s*[-–—,:;]\s*/g, (m) => (m.includes(",") ? ", " : " — "))
+    .replace(/\s*[-–—,:;]\s*/g, (m) => (m.includes(",") ? ", " : ": "))
     .replace(/\s{2,}/g, " ")
     .trim()
     .replace(/^[-–—,:;\s]+/, "");
@@ -150,10 +150,10 @@ export function overviewFromWebFacts(name: string, text: string, maxChars = 180)
   for (const raw of splitFactBlocks(text)) {
     if (!isUsefulFact(raw, name)) continue;
     let sentence = sentenceCase(raw);
-    // Drop leading noise like "Yelp — " once more after casing.
-    sentence = sentence.replace(/^(?:yelp|google|tripadvisor|facebook|instagram)\s*[—:-]\s*/i, "");
+    // Drop leading noise like "Yelp: " once more after casing.
+    sentence = sentence.replace(/^(?:yelp|google|tripadvisor|facebook|instagram)\s*[—:\-]\s*/i, "");
     if (!mentionsName(sentence, name)) {
-      sentence = `${name.trim()} — ${sentence.charAt(0).toLowerCase()}${sentence.slice(1)}`;
+      sentence = `${name.trim()}: ${sentence.charAt(0).toLowerCase()}${sentence.slice(1)}`;
     }
     const key = sentence.toLowerCase();
     if (seen.has(key)) continue;

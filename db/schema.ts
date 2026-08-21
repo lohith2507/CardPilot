@@ -30,6 +30,11 @@ export const users = pgTable(
     isAdmin: boolean("is_admin").notNull().default(false),
     /** Set when an admin creates the account; cleared after first password change. */
     mustChangePassword: boolean("must_change_password").notNull().default(true),
+    /** Shared code: favorites are visible to every user with the same code. */
+    householdCode: text("household_code"),
+    /** When on, Compare defaults Abroad and highlights $0 FX cards. */
+    tripMode: boolean("trip_mode").notNull().default(false),
+    tripAbroadDefault: boolean("trip_abroad_default").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -134,6 +139,8 @@ export const userCards = pgTable(
       .references(() => cards.id, { onDelete: "cascade" }),
     nickname: text("nickname"),
     openedAt: date("opened_at"),
+    /** Day of month (1–28) when monthly bonus caps reset. Null = calendar month. */
+    statementDay: integer("statement_day"),
     active: boolean("active").notNull().default(true),
     /** { [earnRuleId]: true } for rotating categories you've activated. */
     activations: jsonb("activations").notNull().default({}),
@@ -210,9 +217,25 @@ export const transactions = pgTable(
   ],
 );
 
+export const userMerchantFavorites = pgTable(
+  "user_merchant_favorites",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    merchantId: integer("merchant_id")
+      .notNull()
+      .references(() => merchants.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("user_merchant_favorites_user_merchant_key").on(t.userId, t.merchantId)],
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   cards: many(userCards),
   valuations: many(userCurrencyValuations),
+  favorites: many(userMerchantFavorites),
 }));
 
 export const pointCurrenciesRelations = relations(pointCurrencies, ({ many }) => ({
@@ -276,3 +299,4 @@ export type UserCard = typeof userCards.$inferSelect;
 export type SubProgress = typeof subProgress.$inferSelect;
 export type Merchant = typeof merchants.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
+export type UserMerchantFavorite = typeof userMerchantFavorites.$inferSelect;

@@ -132,6 +132,7 @@ export function recommendOffline(
       summary: blurb.summary,
       highlight: blurb.highlight,
       sources: blurb.sources,
+      favorite: false,
     },
     resolvedBy: "cache",
     amountCents,
@@ -145,6 +146,7 @@ export function recommendOffline(
 function reviveEntry(entry: WalletEntry): WalletEntry {
   return {
     ...entry,
+    statementDay: entry.statementDay ?? null,
     rules: entry.rules.map(
       (rule): EngineRule => ({
         ...rule,

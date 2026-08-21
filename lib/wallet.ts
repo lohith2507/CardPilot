@@ -66,9 +66,13 @@ export async function loadWallet(
     const txns = ledgerByUserCard.get(userCard.id) ?? [];
 
     const capUsedCents: Record<number, number> = {};
+    const statementDay = userCard.statementDay ?? null;
     for (const rule of cardRules) {
       if (rule.capAmountCents === null || rule.capPeriod === "none") continue;
-      const bounds = periodBounds(rule.capPeriod, at);
+      const bounds = periodBounds(rule.capPeriod, at, {
+        statementDay,
+        openedAt: userCard.openedAt,
+      });
       if (!bounds) continue;
       capUsedCents[rule.id] = txns
         .filter(
@@ -120,6 +124,7 @@ export async function loadWallet(
       selections: (userCard.selections ?? {}) as Record<string, number>,
       sub,
       capUsedCents,
+      statementDay,
     } satisfies WalletEntry;
   });
 }

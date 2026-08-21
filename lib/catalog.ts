@@ -12,6 +12,7 @@ export type CatalogEntry = {
   inWallet: boolean;
   activations: Record<string, boolean>;
   selections: Record<string, number>;
+  statementDay: number | null;
   /** { [ruleId]: cents spent in the rule's current cap window }. */
   capUsedCents: Record<number, number>;
   sub: s.SubProgress | null;
@@ -58,9 +59,13 @@ export async function loadCatalog(
     const baseCurrency = currencyById.get(card.currencyId)!;
 
     const capUsedCents: Record<number, number> = {};
+    const statementDay = userCard?.statementDay ?? null;
     for (const rule of cardRules) {
       if (rule.capAmountCents === null || rule.capPeriod === "none") continue;
-      const bounds = periodBounds(rule.capPeriod as CapPeriod, at);
+      const bounds = periodBounds(rule.capPeriod as CapPeriod, at, {
+        statementDay,
+        openedAt: userCard?.openedAt,
+      });
       if (!bounds) continue;
       capUsedCents[rule.id] = txns
         .filter(
@@ -81,6 +86,7 @@ export async function loadCatalog(
       inWallet: Boolean(userCard?.active),
       activations: (userCard?.activations ?? {}) as Record<string, boolean>,
       selections: (userCard?.selections ?? {}) as Record<string, number>,
+      statementDay: userCard?.statementDay ?? null,
       capUsedCents,
       sub: userCard ? (subByUserCardId.get(userCard.id) ?? null) : null,
     };

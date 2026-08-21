@@ -76,6 +76,7 @@ function entry(over: Partial<WalletEntry> = {}): WalletEntry {
     selections: {},
     sub: null,
     capUsedCents: {},
+    statementDay: null,
     ...over,
   };
 }
@@ -451,5 +452,18 @@ describe("verification", () => {
 
     expect(score.appliedRule?.unverified).toBe(true);
     expect(score.warnings.some((w) => w.includes("not been verified"))).toBe(true);
+  });
+});
+
+describe("statement-cycle caps", () => {
+  it("uses statement day for monthly windows", () => {
+    const at = new Date("2026-08-20T12:00:00Z");
+    const bounds = periodBounds("month", at, { statementDay: 15 });
+    expect(bounds?.start.toISOString().slice(0, 10)).toBe("2026-08-15");
+    expect(bounds?.end.toISOString().slice(0, 10)).toBe("2026-09-15");
+
+    const early = periodBounds("month", new Date("2026-08-10T12:00:00Z"), { statementDay: 15 });
+    expect(early?.start.toISOString().slice(0, 10)).toBe("2026-07-15");
+    expect(early?.end.toISOString().slice(0, 10)).toBe("2026-08-15");
   });
 });

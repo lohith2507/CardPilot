@@ -2,10 +2,10 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import { Loader2, Minus, Plus, ShieldAlert } from "lucide-react";
+import { Loader2, Minus, Plus } from "lucide-react";
 import { CardSwatch } from "@/components/card-face";
 import { Button, Eyebrow, EmptyState, Panel, Pill } from "@/components/ui";
-import { addCardToWallet, removeCardFromWallet } from "@/app/actions";
+import { addCardToWallet, removeCardFromWallet, setStatementDay, verifyRule } from "@/app/actions";
 import { cn, formatCents, formatPct, formatRate } from "@/lib/utils";
 
 export type RuleView = {
@@ -42,6 +42,7 @@ export type CardView = {
   currencyName: string;
   cpp: number;
   isCashback: boolean;
+  statementDay: number | null;
   rules: RuleView[];
 };
 
@@ -84,7 +85,7 @@ export function Wallet({ cards }: { cards: CardView[] }) {
 
       {rest.length > 0 ? (
         <section>
-          <Eyebrow>Catalogue — not ranked until added</Eyebrow>
+          <Eyebrow>Catalogue: not ranked until added</Eyebrow>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             These are reference cards on this device. Add one to your wallet to include it in
             comparisons.
@@ -146,6 +147,25 @@ function CardRow({ card }: { card: CardView }) {
           </ul>
         ) : null}
 
+        {card.userCardId ? (
+          <label className="flex items-center gap-2 border-t border-line pt-3 text-xs text-muted">
+            Statement day (monthly caps)
+            <input
+              type="number"
+              min={1}
+              max={28}
+              placeholder="1-28"
+              defaultValue={card.statementDay ?? ""}
+              className="numeral w-16 rounded-lg border border-line bg-raised px-2 py-1 text-ink"
+              onBlur={(e) => {
+                const raw = e.target.value.trim();
+                const day = raw === "" ? null : Number.parseInt(raw, 10);
+                start(() => void setStatementDay(card.userCardId!, day));
+              }}
+            />
+          </label>
+        ) : null}
+
         {card.notes ? <p className="text-xs leading-relaxed text-muted">{card.notes}</p> : null}
       </Panel>
     </li>
@@ -156,6 +176,7 @@ function RuleLine({ rule, unit }: { rule: RuleView; unit: string }) {
   const capped = rule.capAmountCents !== null && rule.capPeriod !== "none";
   const pct = capped ? Math.min(100, (rule.capUsedCents / rule.capAmountCents!) * 100) : 0;
   const dormant = (rule.requiresActivation && !rule.activated) || (rule.selectionGroup && !rule.selected);
+  const [pending, start] = useTransition();
 
   return (
     <li className="space-y-1.5">
@@ -175,7 +196,14 @@ function RuleLine({ rule, unit }: { rule: RuleView; unit: string }) {
           {rule.label}
         </span>
         {rule.unverified ? (
-          <ShieldAlert size={13} className="shrink-0 text-muted" aria-label="Rate not verified" />
+          <button
+            type="button"
+            disabled={pending}
+            className="shrink-0 text-[10px] font-semibold text-brand"
+            onClick={() => start(() => void verifyRule(rule.id))}
+          >
+            {pending ? "…" : "Mark verified"}
+          </button>
         ) : null}
         {dormant ? <Pill>{rule.requiresActivation ? "Not activated" : "Not picked"}</Pill> : null}
       </div>

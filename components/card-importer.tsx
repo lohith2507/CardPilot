@@ -133,7 +133,7 @@ export function CardImporter({ catalog }: { catalog: CatalogPick[] }) {
         <h1 className="mt-1.5 text-3xl font-bold tracking-tight">Save rates you trust</h1>
         <p className="mt-2.5 text-sm leading-relaxed text-muted">
           Browse an issuer (for example Chase), add a known card, or look up terms from the web.
-          Anything fetched by AI is a draft — edit it before you save. Comparisons only use what you
+          Anything fetched by AI is a draft. Edit it before you save. Comparisons only use what you
           save.
         </p>
       </header>
@@ -390,7 +390,7 @@ function Review({
         <Eyebrow>Review draft</Eyebrow>
         <h2 className="mt-1.5 text-xl font-bold tracking-tight">Check before you save</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Rates below may be incomplete or out of date. Fix anything that looks wrong — after save,
+          Rates below may be incomplete or out of date. Fix anything that looks wrong. After save,
           CardPilot treats them as the truth for ranking.
         </p>
       </header>
@@ -422,7 +422,7 @@ function Review({
       ) : (
         <Panel className="border-brand/20 bg-brand-soft">
           <p className="text-xs leading-relaxed text-muted">
-            No open uncertainties were flagged — still worth a quick pass against your issuer&apos;s
+            No open uncertainties were flagged. Still worth a quick pass against your issuer&apos;s
             current terms.
           </p>
         </Panel>
@@ -589,7 +589,7 @@ function Review({
       <div className="space-y-2.5">
         <Button size="lg" onClick={onSave} disabled={saving}>
           {saving ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
-          Save after review — {draft.rules.length} categor
+          Save after review: {draft.rules.length} categor
           {draft.rules.length === 1 ? "y" : "ies"}
         </Button>
         <Button variant="ghost" size="lg" onClick={onDiscard} disabled={saving}>

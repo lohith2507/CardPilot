@@ -1,9 +1,12 @@
 import { getDb } from "@/db";
 import { Account } from "@/components/account";
 import { AdminAccounts } from "@/components/admin-accounts";
+import { FeaturesSettings } from "@/components/features-settings";
 import { Settings, type CurrencyView, type SubView, type TxView } from "@/components/settings";
 import { listUsersForAdmin } from "@/app/actions/users";
 import { loadCatalog, loadCurrenciesForUser, loadTransactions } from "@/lib/catalog";
+import { feeVsRewardsYtd } from "@/lib/fee-year";
+import { loadTripPrefs } from "@/lib/recommend";
 import { currentSession, resolveUserId } from "@/lib/session";
 import { loadWallet } from "@/lib/wallet";
 import { toCardView } from "@/lib/views";
@@ -15,11 +18,13 @@ export default async function SettingsPage() {
   const userId = await resolveUserId();
   const session = await currentSession();
   const db = await getDb();
-  const [catalog, wallet, currencyRows, txRows] = await Promise.all([
+  const [catalog, wallet, currencyRows, txRows, trip, feeYear] = await Promise.all([
     loadCatalog(db, userId),
     loadWallet(db, userId),
     loadCurrenciesForUser(db, userId),
     loadTransactions(db, userId),
+    loadTripPrefs(db, userId),
+    feeVsRewardsYtd(db, userId),
   ]);
 
   const owned = catalog.filter((entry) => entry.inWallet);
@@ -72,11 +77,12 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <Settings
-        currencies={currencies}
-        cards={cards}
-        subs={subs}
-        transactions={transactions}
+      <Settings currencies={currencies} cards={cards} subs={subs} transactions={transactions} />
+      <FeaturesSettings
+        tripMode={trip.tripMode}
+        tripAbroadDefault={trip.tripAbroadDefault}
+        householdCode={trip.householdCode}
+        feeYear={feeYear}
       />
       {session?.isAdmin ? <AdminAccounts users={users} /> : null}
       <Account />

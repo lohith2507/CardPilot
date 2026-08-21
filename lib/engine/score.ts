@@ -160,7 +160,7 @@ export function scoreCard(entry: WalletEntry, ctx: PurchaseContext): CardScore {
 
   if (appliedRule?.capRemainingBeforeCents != null) {
     reasons.push({
-      label: `Bonus cap left ${periodLabel(appliedRule.capPeriod)}`,
+      label: `Bonus cap left ${periodLabel(appliedRule.capPeriod, entry.statementDay)}`,
       value: formatCents(appliedRule.capRemainingBeforeCents - bonusPortionCents),
       note: `out of ${formatCents(appliedRule.capAmountCents!)}`,
     });
@@ -245,7 +245,9 @@ function collectWarnings(
         warnings.push(`Switching this card's category to "${candidate.rule.label}" would earn ${rate} here.`);
         break;
       case "capped":
-        warnings.push(`The ${rate} "${candidate.rule.label}" cap is used up ${periodLabel(candidate.rule.capPeriod)}.`);
+        warnings.push(
+          `The ${rate} "${candidate.rule.label}" cap is used up ${periodLabel(candidate.rule.capPeriod, entry.statementDay)}.`,
+        );
         break;
       case "window":
         break;

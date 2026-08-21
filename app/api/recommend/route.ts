@@ -14,6 +14,16 @@ const bodySchema = z.object({
   query: z.string().min(1, "Type where you are."),
   amountCents: z.number().int().min(1).max(100_000_000),
   isForeign: z.boolean().optional(),
+  lines: z
+    .array(
+      z.object({
+        label: z.string(),
+        amountCents: z.number().int().min(1).max(100_000_000),
+        mcc: z.number().int().min(700).max(9999).optional(),
+      }),
+    )
+    .max(4)
+    .optional(),
 });
 
 export async function POST(request: Request) {

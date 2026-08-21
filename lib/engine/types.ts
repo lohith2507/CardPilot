@@ -72,6 +72,8 @@ export type WalletEntry = {
   sub: EngineSub | null;
   /** { [ruleId]: cents already spent in the rule's current cap period }. */
   capUsedCents: Record<number, number>;
+  /** 1–28 when monthly caps follow the statement cycle. */
+  statementDay: number | null;
 };
 
 export type PurchaseContext = {

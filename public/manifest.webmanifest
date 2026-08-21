@@ -23,6 +23,7 @@
     }
   ],
   "shortcuts": [
+    { "name": "Compare", "url": "/", "description": "Rank cards for a purchase" },
     { "name": "My wallet", "url": "/cards" },
     { "name": "Settings", "url": "/settings" }
   ]

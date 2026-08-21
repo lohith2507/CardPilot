@@ -40,6 +40,7 @@ export function toCardView(entry: CatalogEntry): CardView {
     currencyName: entry.currency.name,
     cpp,
     isCashback: entry.currency.isCashback,
+    statementDay: entry.statementDay,
     rules,
   };
 }

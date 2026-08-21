@@ -55,7 +55,7 @@ export async function lookupCardTerms(name: string, io: LookupIO = defaultIO): P
   // which card — refuse early rather than burning a model call on that.
   if (/^(chase|amex|american express|citi|capital one|discover|wells fargo|bank of america)\s*(bank|cards?)?$/i.test(query)) {
     throw new Error(
-      `Which ${query} card? Type the product name too — for example "${query.includes("chase") || /^chase$/i.test(query) ? "Chase Sapphire Preferred" : `${query} Gold`}".`,
+      `Which ${query} card? Type the product name too, for example "${query.includes("chase") || /^chase$/i.test(query) ? "Chase Sapphire Preferred" : `${query} Gold`}".`,
     );
   }
 

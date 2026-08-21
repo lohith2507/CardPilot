@@ -98,7 +98,7 @@ export function factsFromLangSearchPages(pages: LangSearchPage[], maxChars = 180
   const blocks = pages.map((page) => {
     const body = page.summary || page.snippet;
     if (!body) return page.name;
-    return page.name ? `${page.name} — ${body}` : body;
+    return page.name ? `${page.name}: ${body}` : body;
   }).filter(Boolean);
   return {
     text: clip(blocks.join("\n\n"), maxChars),

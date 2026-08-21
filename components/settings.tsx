@@ -12,6 +12,7 @@ import {
   setActivation,
   setSelection,
   setUserCpp,
+  verifyRule,
 } from "@/app/actions";
 import { cn, formatCents, formatRate } from "@/lib/utils";
 
@@ -68,7 +69,7 @@ export function Settings({
         <Eyebrow>Settings</Eyebrow>
         <h1 className="mt-1.5 text-3xl font-bold tracking-tight">How estimates are valued</h1>
         <p className="mt-2.5 text-sm leading-relaxed text-muted">
-          These inputs change the dollar estimate on Compare. They are your assumptions — not market
+          These inputs change the dollar estimate on Compare. They are your assumptions, not market
           prices or advice.
         </p>
       </header>
@@ -77,7 +78,7 @@ export function Settings({
         <Eyebrow>What a point is worth to you</Eyebrow>
         <p className="mt-2 text-sm leading-relaxed text-muted">
           This number decides whether a points card beats flat cash back in the ranking. Set it to
-          what you usually get when you redeem — not a best-case transfer partner rate unless that
+          what you usually get when you redeem, not a best-case transfer partner rate unless that
           is what you actually use.
         </p>
         <ul className="mt-4 space-y-3">
@@ -92,13 +93,41 @@ export function Settings({
           <Eyebrow>Rotating categories</Eyebrow>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             These earn nothing extra until you opt in on the issuer&apos;s site each quarter. Mirror
-            that here so the estimate matches what you activated — CardPilot cannot see the issuer
+            that here so the estimate matches what you activated. CardPilot cannot see the issuer
             portal.
           </p>
           <ul className="mt-4 space-y-3">
             {rotating.map((card) => (
               <ActivationCard key={card.cardId} card={card} />
             ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {cards.some((c) => c.rules.some((r) => r.unverified)) ? (
+        <section>
+          <Eyebrow>Rule freshness</Eyebrow>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            Unverified rates came from a lookup or seed. Mark verified after you confirm with the
+            issuer, or look the card up again under Add a card.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {cards.flatMap((card) =>
+              card.rules
+                .filter((r) => r.unverified)
+                .map((rule) => (
+                  <li
+                    key={rule.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3.5 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">{card.product}</p>
+                      <p className="truncate text-xs text-muted">{rule.label}</p>
+                    </div>
+                    <VerifyRuleButton ruleId={rule.id} />
+                  </li>
+                )),
+            )}
           </ul>
         </section>
       ) : null}
@@ -121,7 +150,7 @@ export function Settings({
         <Eyebrow>Signup bonuses</Eyebrow>
         <p className="mt-2 text-sm leading-relaxed text-muted">
           While a minimum spend is open, that card often wins every purchase in the estimate. Track
-          it here so the ranking accounts for the bonus — still confirm terms with the issuer.
+          it here so the ranking accounts for the bonus. Still confirm terms with the issuer.
         </p>
         {cards.length === 0 ? (
           <div className="mt-4">
@@ -170,6 +199,16 @@ export function Settings({
         </p>
       </Panel>
     </div>
+  );
+}
+
+function VerifyRuleButton({ ruleId }: { ruleId: number }) {
+  const [pending, start] = useTransition();
+  return (
+    <Button size="sm" variant="outline" disabled={pending} onClick={() => start(() => void verifyRule(ruleId))}>
+      {pending ? <Loader2 size={13} className="animate-spin" /> : null}
+      Mark verified
+    </Button>
   );
 }
 
@@ -283,7 +322,7 @@ function SelectionCard({ card }: { card: CardView }) {
                 }}
                 className="w-full rounded-xl border border-line bg-surface px-3 py-3 text-sm text-ink focus:border-brand focus:outline-none"
               >
-                <option value="0">Not picked — earns the base rate</option>
+                <option value="0">Not picked: earns the base rate</option>
                 {options.map((r) => (
                   <option key={r.id} value={String(r.id)}>
                     {formatRate(r.rate)}

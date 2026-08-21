@@ -14,7 +14,7 @@ const body = Inter({
 export const metadata: Metadata = {
   title: "CardPilot",
   description:
-    "Compare the cards in your wallet for a purchase using the earn rules you saved. Estimates only — confirm rates with your issuer.",
+    "Compare the cards in your wallet for a purchase using the earn rules you saved. Estimates only. Confirm rates with your issuer.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "CardPilot" },
 };
