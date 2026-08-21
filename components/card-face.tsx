@@ -43,12 +43,16 @@ export function CardFace({
   const to = colorTo ?? "#141b26";
   const resolvedArt = artUrl ?? cardArtForSlug(slug);
   const hasArt = Boolean(resolvedArt);
+  // When we have real card art and no rate headline, show the face alone —
+  // issuer branding is already in the image.
+  const artOnly = hasArt && !headline;
 
   return (
     <div
       className={cn(
-        "relative isolate overflow-hidden rounded-card p-5 shadow-lifted",
+        "relative isolate overflow-hidden rounded-card shadow-lifted",
         "ring-1 ring-inset ring-white/15",
+        artOnly ? "aspect-[1.586/1]" : "p-5",
         className,
       )}
       style={{ background: `linear-gradient(145deg, ${from} 0%, ${to} 100%)` }}
@@ -61,47 +65,52 @@ export function CardFace({
             className="absolute inset-0 h-full w-full object-cover"
             loading="lazy"
           />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-white/10"
-          />
+          {!artOnly ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-white/5"
+            />
+          ) : null}
         </>
       ) : null}
 
-      {/* Light catching the top-left corner, the way a real card does. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(120% 90% at 12% 0%, rgb(255 255 255 / 0.22), transparent 55%)",
-        }}
-      />
+      {!artOnly ? (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-10"
+            style={{
+              background:
+                "radial-gradient(120% 90% at 12% 0%, rgb(255 255 255 / 0.22), transparent 55%)",
+            }}
+          />
 
-      <p className="relative text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">
-        {issuer}
-      </p>
-      <p className="relative mt-0.5 text-xl font-semibold text-white">{product}</p>
-
-      {headline ? (
-        <div className="relative mt-7 flex items-end justify-between gap-3">
-          <div>
-            <p className="numeral text-[3.25rem] font-semibold leading-none text-white">
-              {headline}
-            </p>
-            {headlineLabel ? (
-              <p className="mt-1.5 text-xs text-white/75">{headlineLabel}</p>
-            ) : null}
-          </div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
-            {NETWORK_MARK[network] ?? network}
+          <p className="relative text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">
+            {issuer}
           </p>
-        </div>
-      ) : (
-        <p className="relative mt-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
-          {NETWORK_MARK[network] ?? network}
-        </p>
-      )}
+          <p className="relative mt-0.5 text-xl font-semibold text-white">{product}</p>
+
+          {headline ? (
+            <div className="relative mt-7 flex items-end justify-between gap-3">
+              <div>
+                <p className="numeral text-[3.25rem] font-semibold leading-none text-white">
+                  {headline}
+                </p>
+                {headlineLabel ? (
+                  <p className="mt-1.5 text-xs text-white/75">{headlineLabel}</p>
+                ) : null}
+              </div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
+                {NETWORK_MARK[network] ?? network}
+              </p>
+            </div>
+          ) : (
+            <p className="relative mt-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/55">
+              {NETWORK_MARK[network] ?? network}
+            </p>
+          )}
+        </>
+      ) : null}
     </div>
   );
 }

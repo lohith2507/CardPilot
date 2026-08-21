@@ -41,15 +41,38 @@ export function clipToSentences(text: string, maxSentences = 3, maxChars = 320):
 }
 
 const JUNK_SNIPPET =
-  /cookie|privacy policy|terms of (use|service)|sign in|log in|add to cart|subscribe|newsletter|all rights reserved|grocery or restaurant or supermarket|\bor\s+restaurant\s+or\s+store\b|click here|javascript required|enable cookies/i;
+  /cookie|privacy policy|terms of (use|service)|sign in|log in|add to cart|subscribe|newsletter|all rights reserved|grocery or restaurant or supermarket|\bor\s+restaurant\s+or\s+store\b|click here|javascript required|enable cookies|dirección|mariscos|asiático|\+\s*61|\+\s*1\d{10}|hours?\s+menu|menu\s+reviews?/i;
 
 const PLACE_WORD =
-  /\b(grocery|grocer|supermarket|restaurant|cafe|coffee|bakery|market|store|shop|gas|petrol|pharmacy|hotel|motel|airline|warehouse|salon|barber|gym|theatre|theater|cinema|bar|pub|bistro|deli|pizzeria|takeaway|take-out|fast food|electronics|apparel|clothing)\b/i;
+  /\b(grocery|grocer|supermarket|restaurant|cafe|coffee|bakery|market|store|shop|gas|petrol|pharmacy|hotel|motel|airline|warehouse|salon|barber|gym|theatre|theater|cinema|bar|pub|bistro|deli|pizzeria|takeaway|take-out|fast food|electronics|apparel|clothing|indian|chinese|mexican|thai|sushi|dining)\b/i;
 
 const PLACE_VERB = /\b(is|are|was|were|serves|sells|offers|located|specializ(?:e|es|ing)|known|operates)\b/i;
 
+/** Words too common to prove the snippet is about this merchant. */
+const WEAK_NAME_TOKENS = new Set([
+  "the",
+  "and",
+  "for",
+  "restaurant",
+  "cafe",
+  "market",
+  "store",
+  "shop",
+  "food",
+  "kitchen",
+  "grill",
+  "house",
+  "place",
+]);
+
 function sentenceCase(text: string): string {
-  const trimmed = text.replace(/\s+/g, " ").trim().replace(/^[-–—,:;\s]+/, "");
+  const trimmed = text
+    .replace(/\s+/g, " ")
+    .replace(/\s*#\s*\d+\s*/g, " ")
+    .replace(/\s*[-–—,:;]\s*/g, (m) => (m.includes(",") ? ", " : " — "))
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .replace(/^[-–—,:;\s]+/, "");
   if (!trimmed) return "";
   const letters = trimmed.replace(/[^A-Za-z]/g, "");
   const lowerShare = letters
@@ -63,57 +86,89 @@ function sentenceCase(text: string): string {
 function splitFactBlocks(text: string): string[] {
   const chunks: string[] = [];
   for (const block of text.split(/\n+/)) {
+    const title = block.includes(" — ") ? block.slice(0, block.indexOf(" — ")).trim() : "";
     const stripped = block.includes(" — ") ? block.slice(block.indexOf(" — ") + 3) : block;
-    const sentences = stripped.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [stripped];
-    for (const sentence of sentences) {
-      const clean = sentence.replace(/\s+/g, " ").trim();
-      if (clean) chunks.push(clean);
+    // Prefer title+body when the title names the place; otherwise body alone.
+    const candidates = [stripped, title ? `${title}. ${stripped}` : ""].filter(Boolean);
+    for (const candidate of candidates) {
+      const sentences = candidate.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [candidate];
+      for (const sentence of sentences) {
+        const clean = sentence.replace(/\s+/g, " ").trim();
+        if (clean) chunks.push(clean);
+      }
     }
   }
   return chunks;
 }
 
+function nameTokens(name: string): string[] {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 3 && !WEAK_NAME_TOKENS.has(t));
+}
+
 function mentionsName(text: string, name: string): boolean {
-  const needle = name.trim().toLowerCase();
-  if (needle.length < 3) return false;
   const hay = text.toLowerCase();
-  if (hay.includes(needle)) return true;
-  const token = needle.split(/\s+/)[0] ?? "";
-  return token.length >= 4 && hay.includes(token);
+  const needle = name.trim().toLowerCase();
+  if (needle.length >= 3 && hay.includes(needle)) return true;
+  const tokens = nameTokens(name);
+  if (!tokens.length) return false;
+  // Require the distinctive brand token (first strong token), not a weak place word alone.
+  const brand = tokens[0]!;
+  if (!hay.includes(brand)) return false;
+  // If the user typed a multi-word name, prefer at least one more token (city/cuisine/etc.).
+  if (tokens.length === 1) return true;
+  return tokens.slice(1).some((t) => hay.includes(t));
+}
+
+function looksLikeAddressDump(text: string): boolean {
+  const commas = (text.match(/,/g) ?? []).length;
+  const digits = (text.match(/\d/g) ?? []).length;
+  if (commas >= 4 && digits >= 6) return true;
+  if (/\b(wa|nsw|qld|vic)\s*,?\s*\d{4}\b/i.test(text)) return true;
+  if (/\+\s*\d[\d\s-]{8,}/.test(text)) return true;
+  if (/#\s*\d+\s*-/.test(text)) return true;
+  return false;
 }
 
 function isUsefulFact(text: string, name: string): boolean {
-  if (text.length < 28 || text.length > 280) return false;
+  if (text.length < 24 || text.length > 220) return false;
   if (JUNK_SNIPPET.test(text)) return false;
   if (/^https?:/i.test(text)) return false;
   if ((text.match(/\bOR\b/g) ?? []).length >= 2) return false;
-  if (/hours?\s+menu|menu\s+reviews?|best\s+of\s+\d{4}/i.test(text)) return false;
-  const hasPlace = PLACE_WORD.test(text) || PLACE_VERB.test(text);
-  return hasPlace && (mentionsName(text, name) || PLACE_WORD.test(text));
+  if (looksLikeAddressDump(text)) return false;
+  if (!mentionsName(text, name)) return false;
+  return PLACE_WORD.test(text) || PLACE_VERB.test(text);
 }
 
-/** Pull 1–2 readable sentences from messy search snippets. */
-export function overviewFromWebFacts(name: string, text: string, maxChars = 220): string {
+/** Pull one readable sentence that is clearly about this merchant. */
+export function overviewFromWebFacts(name: string, text: string, maxChars = 180): string {
   const seen = new Set<string>();
-  const picked: string[] = [];
   for (const raw of splitFactBlocks(text)) {
     if (!isUsefulFact(raw, name)) continue;
-    const sentence = sentenceCase(raw);
+    let sentence = sentenceCase(raw);
+    // Drop leading noise like "Yelp — " once more after casing.
+    sentence = sentence.replace(/^(?:yelp|google|tripadvisor|facebook|instagram)\s*[—:-]\s*/i, "");
+    if (!mentionsName(sentence, name)) {
+      sentence = `${name.trim()} — ${sentence.charAt(0).toLowerCase()}${sentence.slice(1)}`;
+    }
     const key = sentence.toLowerCase();
     if (seen.has(key)) continue;
-    seen.add(key);
-    const next = picked.length ? `${picked.join(" ")} ${sentence}` : sentence;
-    if (next.length > maxChars && picked.length > 0) break;
-    picked.push(sentence);
-    if (picked.length >= 2) break;
+    if (sentence.length > maxChars) {
+      sentence = `${sentence.slice(0, maxChars - 1).trim()}…`;
+    }
+    return sentence;
   }
-  return picked.join(" ");
+  return "";
 }
 
-function withIndefinite(category: string): string {
-  const label = category.trim().toLowerCase();
-  if (!label) return "a merchant";
-  return /^[aeiou]/.test(label) ? `an ${label}` : `a ${label}`;
+function friendlyCategoryLine(name: string, category: string, mcc: number, mccLabelText: string): string {
+  const label = (category.trim() || mccLabelText).toLowerCase();
+  const article = /^[aeiou]/.test(label) ? "an" : "a";
+  return `${name} is ${article} ${label}. Card networks usually see this as MCC ${mcc} (${mccLabelText}).`;
 }
 
 export type MerchantBlurb = {
@@ -130,25 +185,25 @@ export function buildMerchantBlurb(
   mccLabelText: string,
   facts?: MerchantWebFacts | null,
 ): MerchantBlurb {
-  const sources = facts?.sources?.slice(0, 4) ?? [];
-  const raw = facts?.text?.trim();
   const highlight = category.trim() || mccLabelText;
-
-  const coding = `Card networks usually see purchases as MCC ${mcc} (${mccLabelText}).`;
+  const raw = facts?.text?.trim();
   const web = raw ? overviewFromWebFacts(name, raw) : "";
 
   if (web) {
-    const alreadyTyped =
-      mentionsName(web, name) && web.toLowerCase().includes(highlight.toLowerCase());
-    const lead = alreadyTyped ? web : `${name} looks like ${withIndefinite(highlight)} from public pages. ${web}`;
-    const summary = clipToSentences(`${lead} ${coding}`, 4, 360);
+    const sources = (facts?.sources ?? []).slice(0, 4);
+    const summary = clipToSentences(
+      `${web} Card networks usually see this as MCC ${mcc} (${mccLabelText}).`,
+      3,
+      280,
+    );
     return { summary, highlight, sources };
   }
 
   return {
-    summary: `${name} is listed as ${highlight.toLowerCase()}. ${coding}`,
+    summary: friendlyCategoryLine(name, category, mcc, mccLabelText),
     highlight,
-    sources,
+    // Unrelated SERP links are worse than none when we could not trust the text.
+    sources: [],
   };
 }
 

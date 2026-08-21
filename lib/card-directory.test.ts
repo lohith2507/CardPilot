@@ -49,6 +49,15 @@ describe("searchCards", () => {
     expect(gold?.readyToAdd).toBe(false);
   });
 
+  it("attaches local demo art when the catalogue left artUrl empty", () => {
+    const preferred = searchCards("sapphire preferred", catalog).find(
+      (h) => h.slug === "chase-sapphire-preferred",
+    );
+    expect(preferred?.artUrl).toBe("/cards/chase-sapphire-preferred.jpg");
+    const gold = searchCards("gold", catalog).find((h) => h.slug === "amex-gold");
+    expect(gold?.artUrl).toBe("/cards/amex-gold.png");
+  });
+
   it("returns nothing for an empty query", () => {
     expect(searchCards("", catalog)).toEqual([]);
   });

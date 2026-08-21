@@ -96,6 +96,7 @@ describe("merchant web lookup helpers", () => {
     expect(blurb.summary).toMatch(/Desi Adda/i);
     expect(blurb.summary).toMatch(/Indian restaurant/i);
     expect(blurb.summary).toMatch(/MCC 5812/);
+    expect(blurb.summary).not.toMatch(/looks like/i);
     expect(blurb.highlight).toBe("Restaurant");
     expect(blurb.sources).toHaveLength(1);
   });
@@ -117,6 +118,22 @@ describe("merchant web lookup helpers", () => {
     expect(blurb.summary).toMatch(/5411/);
   });
 
+  it("drops unrelated SERP junk instead of showing another business", () => {
+    const blurb = buildMerchantBlurb("Swagath Redmond", "Specialty retail", 5999, "Specialty retail", {
+      text: [
+        "Miss chow's en claremont — miss chow 's - claremont # 13 - mariscos - claremont , cafés claremont quarter , shop 119 , claremont , perth , wa , 6010 , australia + 61893833371",
+        "Directory — specialty retail store near you hours menu reviews",
+      ].join("\n\n"),
+      sources: ["https://example.com/miss-chow"],
+    });
+    expect(blurb.summary).not.toMatch(/Miss chow/i);
+    expect(blurb.summary).not.toMatch(/claremont/i);
+    expect(blurb.summary).not.toMatch(/looks like/i);
+    expect(blurb.summary).toMatch(/Swagath Redmond is a specialty retail/i);
+    expect(blurb.summary).toMatch(/MCC 5999/);
+    expect(blurb.sources).toEqual([]);
+  });
+
   it("falls back to a category template when there are no web facts", () => {
     const blurb = buildMerchantBlurb("McDonald's", "Fast food", 5814, "Fast food");
     expect(blurb.summary).toMatch(/McDonald's/);
@@ -131,7 +148,13 @@ describe("merchant web lookup helpers", () => {
         "Mayuri",
         "Local Guide — mayuri is an indian grocery store in the bay area.",
       ),
-    ).toMatch(/^Mayuri is an indian grocery store in the bay area\./i);
+    ).toMatch(/Mayuri/i);
+    expect(
+      overviewFromWebFacts(
+        "Mayuri",
+        "Local Guide — mayuri is an indian grocery store in the bay area.",
+      ),
+    ).toMatch(/indian grocery store/i);
   });
 
   it("shortens source URLs to readable hostnames", () => {

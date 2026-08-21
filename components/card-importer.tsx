@@ -6,6 +6,7 @@ import { Check, FileUp, Globe, Loader2, Search, Trash2, TriangleAlert, Wand2 } f
 import { CardFace } from "@/components/card-face";
 import { Button, Eyebrow, Input, Panel, Pill, Switch } from "@/components/ui";
 import { addCardToWallet, saveExtractedCard } from "@/app/actions";
+import { cardArtForName } from "@/lib/card-art";
 import { searchCards, type CatalogPick, type SearchHit } from "@/lib/card-directory";
 import type { ExtractedCard, ExtractedRule } from "@/lib/extract";
 import { parseMccList } from "@/lib/mcc";
@@ -325,28 +326,34 @@ function CatalogPickCard({
         colorTo={hit.colorTo}
         className="rounded-none shadow-none ring-0"
       />
-      <div className="flex items-center gap-2 p-3">
-        {hit.inWallet ? (
-          <Pill tone="brand" className="flex-1 justify-center">
-            <Check size={12} aria-hidden />
-            In wallet
-          </Pill>
-        ) : hit.readyToAdd && hit.cardId ? (
-          <Button size="sm" className="flex-1" onClick={onAdd} disabled={busy}>
-            {busy ? <Loader2 size={14} className="animate-spin" aria-hidden /> : null}
-            Add to wallet
-          </Button>
-        ) : (
-          <Button size="sm" className="flex-1" onClick={onLookup} disabled={busy}>
-            {busy ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <Globe size={14} aria-hidden />}
-            Look up terms
-          </Button>
-        )}
-        {hit.cardId && !hit.inWallet ? (
-          <Button size="sm" variant="ghost" onClick={onLookup} disabled={busy} aria-label="Refresh terms">
-            <Globe size={14} />
-          </Button>
-        ) : null}
+      <div className="space-y-2 p-3">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">{hit.issuer}</p>
+          <p className="text-sm font-semibold text-ink">{hit.product}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {hit.inWallet ? (
+            <Pill tone="brand" className="flex-1 justify-center">
+              <Check size={12} aria-hidden />
+              In wallet
+            </Pill>
+          ) : hit.readyToAdd && hit.cardId ? (
+            <Button size="sm" className="flex-1" onClick={onAdd} disabled={busy}>
+              {busy ? <Loader2 size={14} className="animate-spin" aria-hidden /> : null}
+              Add to wallet
+            </Button>
+          ) : (
+            <Button size="sm" className="flex-1" onClick={onLookup} disabled={busy}>
+              {busy ? <Loader2 size={14} className="animate-spin" aria-hidden /> : <Globe size={14} aria-hidden />}
+              Look up terms
+            </Button>
+          )}
+          {hit.cardId && !hit.inWallet ? (
+            <Button size="sm" variant="ghost" onClick={onLookup} disabled={busy} aria-label="Refresh terms">
+              <Globe size={14} />
+            </Button>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -389,6 +396,8 @@ function Review({
       </header>
 
       <CardFace
+        slug={draft.slug}
+        artUrl={cardArtForName(draft.issuer, draft.product, draft.slug)}
         issuer={draft.issuer}
         product={draft.product}
         network={draft.network}

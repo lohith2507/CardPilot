@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="856" height="540" viewBox="0 0 856 540">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff7a2f"/>
+      <stop offset="55%" stop-color="#e07b25"/>
+      <stop offset="100%" stop-color="#8a3f06"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff" stop-opacity=".2"/>
+      <stop offset="45%" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="856" height="540" rx="28" fill="url(#g)"/>
+  <rect width="856" height="540" rx="28" fill="url(#shine)"/>
+  <text x="48" y="78" fill="#fff" fill-opacity=".9" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" letter-spacing="1">DISCOVER</text>
+  <text x="48" y="132" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="700">it® Cash Back</text>
+  <rect x="48" y="190" width="72" height="56" rx="8" fill="#f5d76e" fill-opacity=".9"/>
+  <text x="760" y="470" text-anchor="end" fill="#fff" fill-opacity=".85" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">DISCOVER</text>
+</svg>

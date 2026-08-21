@@ -1,5 +1,6 @@
 import { getDb } from "@/db";
 import { CardImporter } from "@/components/card-importer";
+import { cardArtForSlug } from "@/lib/card-art";
 import { loadCatalog } from "@/lib/catalog";
 import type { CatalogPick } from "@/lib/card-directory";
 import { resolveUserId } from "@/lib/session";
@@ -19,7 +20,7 @@ export default async function AddCardPage() {
     network: entry.card.network,
     colorFrom: entry.card.colorFrom,
     colorTo: entry.card.colorTo,
-    artUrl: null,
+    artUrl: cardArtForSlug(entry.card.slug),
     inWallet: entry.inWallet,
     annualFeeCents: entry.card.annualFeeCents,
     baseRate: entry.card.baseRate,
