@@ -14,10 +14,10 @@ export const LOCAL_DATA_DIR = path.join(process.cwd(), ".pglite");
 const MIGRATIONS_DIR = path.join(process.cwd(), "db", "migrations");
 
 /**
- * Bump when local PGlite needs columns that an already-open connection might have
- * skipped (HMR keeps the cached client across code edits).
+ * Bump when schema patches below need to re-run on an already-open connection
+ * (local HMR) or a long-lived serverless isolate.
  */
-const LOCAL_SCHEMA_REV = 2;
+const SCHEMA_REV = 2;
 
 /**
  * With DATABASE_URL set we talk to Neon over HTTP. Without it we fall back to
@@ -30,7 +30,12 @@ async function createDb(): Promise<Db> {
   if (url) {
     const { neon } = await import("@neondatabase/serverless");
     const { drizzle } = await import("drizzle-orm/neon-http");
-    return drizzle(neon(url), { schema }) as unknown as Db;
+    const db = drizzle(neon(url), { schema }) as unknown as Db;
+    // Neon migrations normally run via scripts/migrate.ts. Also apply
+    // idempotent patches here so production recovers if a deploy shipped
+    // ahead of a manual migrate (columns like household_code / statement_day).
+    await ensureSchema(db);
+    return db;
   }
 
   const { PGlite } = await import("@electric-sql/pglite");
@@ -41,21 +46,18 @@ async function createDb(): Promise<Db> {
   await client.waitReady;
   const db = drizzle(client, { schema }) as unknown as Db;
 
-  // Local only. Against Neon, migrations are applied by scripts/migrate.ts so
-  // a cold serverless invocation never races to alter the schema.
   await migrate(db as never, { migrationsFolder: MIGRATIONS_DIR });
-  await ensureLocalSchema(db);
+  await ensureSchema(db);
   await seedIfEmpty(db);
 
   return db;
 }
 
 /**
- * Idempotent patches for columns added after an existing .pglite volume was
- * created. Covers the case where migrate already ran on an older journal while
- * Next kept the PGlite client cached across hot reloads.
+ * Idempotent patches for columns/tables added after an existing database was
+ * created. Safe to re-run on Neon and PGlite (IF NOT EXISTS).
  */
-async function ensureLocalSchema(db: Db) {
+async function ensureSchema(db: Db) {
   await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "household_code" text`);
   await db.execute(
     sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "trip_mode" boolean DEFAULT false NOT NULL`,
@@ -95,15 +97,15 @@ export function getDb(): Promise<Db> {
   const isLocal = !process.env.DATABASE_URL?.trim();
 
   globalForDb.__cardpilotDb ??= createDb().then((db) => {
-    globalForDb.__cardpilotSchemaRev = LOCAL_SCHEMA_REV;
+    globalForDb.__cardpilotSchemaRev = SCHEMA_REV;
     return db;
   });
 
   return globalForDb.__cardpilotDb.then(async (db) => {
     // After HMR the client may predate new columns; patch without reopening PGlite.
-    if (isLocal && globalForDb.__cardpilotSchemaRev !== LOCAL_SCHEMA_REV) {
-      await ensureLocalSchema(db);
-      globalForDb.__cardpilotSchemaRev = LOCAL_SCHEMA_REV;
+    if (isLocal && globalForDb.__cardpilotSchemaRev !== SCHEMA_REV) {
+      await ensureSchema(db);
+      globalForDb.__cardpilotSchemaRev = SCHEMA_REV;
     }
     return db;
   });
