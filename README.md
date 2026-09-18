@@ -23,10 +23,24 @@ Bonus cap left this year .......... $49,900
   out of $50,000
 ```
 
-## The one thing to do first
+## Environment
 
-The Groq API key that was pasted into chat is in `.env.local`. Treat it as public and
-[rotate it](https://console.groq.com/keys), then replace the value in `.env.local`.
+```bash
+cp .env.example .env.local
+```
+
+| Variable | Required? | Purpose |
+| --- | --- | --- |
+| `GROQ_API_KEY` | For LLM draft/lookup | Merchant MCC mapping and card-rule extraction ([console.groq.com/keys](https://console.groq.com/keys)) |
+| `LANGSEARCH_API_KEY` | Optional | Hybrid web search + rerank for merchants/cards |
+| `NVIDIA_API_KEY` | Optional | NVIDIA NIM alternative for merchant JSON extraction |
+| `DATABASE_URL` | Optional locally | Empty → embedded PGlite in `./.pglite`; set for Neon in production |
+| `AUTH_SECRET` | Production | Signs session cookies; when set, sign-in is required |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth (only pre-provisioned emails) |
+| `GOOGLE_ALLOWED_EMAILS` | Optional | Extra allowlist on top of the users table |
+| `AUTH_URL` | Optional | Canonical origin for OAuth redirect URIs (no trailing slash) |
+
+Never commit `.env.local`. If a key was ever shared in chat, [rotate it](https://console.groq.com/keys).
 
 ## Running it
 
