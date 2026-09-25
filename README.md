@@ -442,6 +442,7 @@ serverless invocation can't race to alter the schema.
 | `npm run db:migrate` | Apply migrations to PGlite or Neon |
 | `npm run db:seed` | Wipe and reload the starter cards and merchants |
 | `npm run db:reset` | Delete the local PGlite database |
+| `npm run user:create` | Provision an email/password user (add `--admin` for the first account) |
 
 ## Layout
 
@@ -451,7 +452,7 @@ components/     UI, all mobile-first
 db/             Drizzle schema, migrations, and seed data
 lib/engine/     The rules engine and its tests — the part that must be right
 lib/            Merchant matching, extraction, wallet loading, offline snapshot
-proxy.ts        The single-password gate
+proxy.ts        Auth gate (open locally; sign-in required when AUTH_SECRET is set)
 ```
 
 `app/globals.css` lists its Tailwind sources explicitly with `source(none)` and `@source`.
