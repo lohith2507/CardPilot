@@ -328,6 +328,10 @@ flowchart TD
 | `/api/merchants/search` | Autocomplete + web lookup |
 | `/api/snapshot` | Offline wallet + merchant cache |
 | `/api/cards/extract` | LLM card-rule extraction |
+| `/api/login`, `/api/logout` | Email/password session |
+| `/api/auth/google/*` | Google OAuth start and callback |
+| `/api/auth/password` | Change password when required |
+| `/api/transactions` | Log purchases for bonus-cap tracking |
 
 ### End-to-end mental model
 
