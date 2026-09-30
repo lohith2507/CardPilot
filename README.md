@@ -441,7 +441,11 @@ serverless invocation can't race to alter the schema.
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Development server |
-| `npm test` | Engine and matching unit tests |
+| `npm run build` | Production build |
+| `npm start` | Serve the production build |
+| `npm run lint` | Run ESLint |
+| `npm test` | Engine and matching unit tests (Vitest, single run) |
+| `npm run test:watch` | Vitest in watch mode |
 | `npm run db:generate` | Regenerate SQL migrations after editing `db/schema.ts` |
 | `npm run db:migrate` | Apply migrations to PGlite or Neon |
 | `npm run db:seed` | Wipe and reload the starter cards and merchants |
