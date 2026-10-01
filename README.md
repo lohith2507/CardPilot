@@ -461,6 +461,8 @@ db/             Drizzle schema, migrations, and seed data
 lib/engine/     The rules engine and its tests — the part that must be right
 lib/            Merchant matching, extraction, wallet loading, offline snapshot
 proxy.ts        Auth gate (open locally; sign-in required when AUTH_SECRET is set)
+scripts/        CLI helpers behind db:migrate, db:seed, db:reset, and user:create
+public/         Card art, app icons, and the web app manifest
 ```
 
 `app/globals.css` lists its Tailwind sources explicitly with `source(none)` and `@source`.
