@@ -324,8 +324,8 @@ flowchart TD
 | `/cards/add` | Extract/add card rules |
 | `/settings` | Valuations + admin accounts |
 | `/login`, `/change-password` | Auth (when enabled) |
-| `/api/recommend` | Rank wallet for a purchase |
-| `/api/merchants/search` | Autocomplete + web lookup |
+| `/api/recommend` | Rank wallet for a purchase — body: `query`, `amountCents`, optional `isForeign`, optional `lines` (up to 4 `{label, amountCents, mcc?}` for split receipts) |
+| `/api/merchants/search` | Autocomplete + web lookup — `GET ?q=` (min 2 characters) |
 | `/api/snapshot` | Offline wallet + merchant cache |
 | `/api/cards/extract` | LLM card-rule extraction |
 | `/api/login`, `/api/logout` | Email/password session |
