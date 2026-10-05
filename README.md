@@ -421,10 +421,11 @@ https://your-domain.vercel.app/api/auth/google/callback
 Google only works for emails that already exist as users. Optional `GOOGLE_ALLOWED_EMAILS` further restricts Google (not email/password).
 
 Each user has a private wallet; the card catalogue is shared.
-`GOOGLE_ALLOWED_EMAILS` is not optional. "Sign in with Google" on its own means *anyone with a
-Google account*, so the allowlist is what makes it yours; an empty list refuses everyone rather
-than admitting everyone. It is also re-checked on every request, so removing an address
-immediately invalidates that person's existing session rather than waiting for it to expire.
+The users table is the real gate for Google sign-in: an email that is not already a user is
+refused. `GOOGLE_ALLOWED_EMAILS` is an optional extra filter on top of that (case and surrounding
+spaces are ignored), and an empty list adds no restriction. Both checks run in the OAuth callback
+at sign-in time, so removing an address blocks future Google sign-ins but does not end a session
+that was already issued.
 
 The flow uses PKCE and a `state` parameter, both held in short-lived cookies, so a callback that
 this app did not initiate is rejected. The ID token's signature is not checked against Google's
