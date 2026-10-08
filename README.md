@@ -387,6 +387,7 @@ to correct cap tracking.
    | `AUTH_SECRET` | Signs session cookies and turns the sign-in gate on. |
    | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional Google sign-in. |
    | `GOOGLE_ALLOWED_EMAILS` | Optional extra Google restriction (users table is still required). |
+   | `AUTH_URL` | Optional. Canonical origin (for example a custom domain) used to build the Google redirect URI; without it the origin comes from the forwarded host headers. |
 
 3. Apply the schema and load the starter data against Neon:
 
