@@ -398,6 +398,7 @@ to correct cap tracking.
    ```
 
 4. Deploy. Sign in with the admin email, change the temporary password, then create other users from Settings.
+
 ## Signing in
 
 Accounts are **admin-provisioned** — there is no public self-registration.
@@ -422,6 +423,7 @@ https://your-domain.vercel.app/api/auth/google/callback
 Google only works for emails that already exist as users. Optional `GOOGLE_ALLOWED_EMAILS` further restricts Google (not email/password).
 
 Each user has a private wallet; the card catalogue is shared.
+
 The users table is the real gate for Google sign-in: an email that is not already a user is
 refused. `GOOGLE_ALLOWED_EMAILS` is an optional extra filter on top of that (case and surrounding
 spaces are ignored), and an empty list adds no restriction. Both checks run in the OAuth callback
