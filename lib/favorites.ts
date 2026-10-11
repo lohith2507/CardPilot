@@ -2,6 +2,7 @@ import { and, eq, inArray, sql, asc } from "drizzle-orm";
 import type { Db } from "@/db";
 import * as s from "@/db/schema";
 
+/** User ids sharing this user's household code (case-insensitive), or just the user when none is set. */
 export async function householdUserIds(db: Db, userId: number): Promise<number[]> {
   const [me] = await db.select().from(s.users).where(eq(s.users.id, userId)).limit(1);
   if (!me?.householdCode?.trim()) return [userId];
@@ -13,6 +14,7 @@ export async function householdUserIds(db: Db, userId: number): Promise<number[]
   return peers.map((p) => p.id);
 }
 
+/** Household favorites, most recently added first, deduped by merchant and capped at 12. */
 export async function listFavoriteMerchants(db: Db, userId: number): Promise<s.Merchant[]> {
   const ids = await householdUserIds(db, userId);
   const rows = await db
@@ -32,6 +34,7 @@ export async function listFavoriteMerchants(db: Db, userId: number): Promise<s.M
   return out;
 }
 
+/** True if anyone in the user's household has favorited this merchant. */
 export async function isFavoriteMerchant(
   db: Db,
   userId: number,
@@ -51,6 +54,10 @@ export async function isFavoriteMerchant(
   return Boolean(row);
 }
 
+/**
+ * Adds or removes only this user's own favorite (not household members').
+ * Returns true when the merchant is now favorited.
+ */
 export async function toggleFavoriteMerchant(
   db: Db,
   userId: number,
