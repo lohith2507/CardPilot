@@ -13,10 +13,15 @@ export type FeeYearSummary = {
   /** Rough cash value of logged earn this calendar year. */
   estimatedRewardsCents: number;
   loggedSpendCents: number;
+  /** estimatedRewardsCents minus annualFeeCents; negative means the fee is not yet earned back. */
   netVsFeeCents: number;
 };
 
-/** Calendar-year estimate: points from tagged rules × current CPP, else base rate. */
+/**
+ * Calendar-year (UTC, Jan 1 to now) estimate per wallet card: each logged
+ * transaction earns its tagged rule's rate (else the card's base rate) times the
+ * user's CPP override, falling back to the currency's default CPP.
+ */
 export async function feeVsRewardsYtd(db: Db, userId: number, at = new Date()): Promise<FeeYearSummary[]> {
   const wallet = await loadWallet(db, userId, at);
   if (!wallet.length) return [];
