@@ -1,5 +1,6 @@
 import type { CapPeriod } from "./types";
 
+/** Half-open UTC window: `start` is inclusive, `end` is exclusive. */
 export type PeriodBounds = { start: Date; end: Date };
 
 export type PeriodOptions = {
@@ -54,6 +55,10 @@ export function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/**
+ * Normalizes a statement day to an integer in 1–28, or null when it is missing,
+ * non-finite, or out of range (29–31 are rejected because not every month has them).
+ */
 export function clampStatementDay(day: number | null | undefined): number | null {
   if (day == null || !Number.isFinite(day)) return null;
   const n = Math.trunc(day);
