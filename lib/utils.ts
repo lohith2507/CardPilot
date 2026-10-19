@@ -19,6 +19,10 @@ export function safeNextPath(value: string | null | undefined): string {
   return value;
 }
 
+/**
+ * Formats integer cents as US dollars. Whole-dollar amounts drop the cents
+ * (`1500` -> "$15"); anything else shows two decimals (`1550` -> "$15.50").
+ */
 export function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("en-US", {
     style: "currency",
@@ -28,11 +32,20 @@ export function formatCents(cents: number): string {
   });
 }
 
+/**
+ * Formats a value already in percent units (not a 0-1 fraction), rounded to two
+ * decimals: whole numbers print bare (`3` -> "3%"), others keep two places
+ * (`2.5` -> "2.50%").
+ */
 export function formatPct(pct: number): string {
   const rounded = Math.round(pct * 100) / 100;
   return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(2)}%`;
 }
 
+/**
+ * Formats an earn-rate multiplier rounded to two decimals, without trailing
+ * zeros (`3` -> "3", `1.5` -> "1.5", `1.333` -> "1.33").
+ */
 export function formatRate(rate: number): string {
   const rounded = Math.round(rate * 100) / 100;
   return rounded % 1 === 0 ? rounded.toFixed(0) : String(rounded);
