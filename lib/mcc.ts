@@ -90,10 +90,16 @@ export const MCC_LABELS: Record<number, string> = {
   7999: "Recreation service",
 };
 
+/** Human-readable label for an MCC, or a generic "MCC 1234" when it is not in MCC_LABELS. */
 export function mccLabel(mcc: number): string {
   return MCC_LABELS[mcc] ?? `MCC ${mcc}`;
 }
 
+/**
+ * Pulls MCCs out of free text such as "5812, 5814 / 5813": splits on any
+ * non-digit run, keeps integers in 700-9999 (so leading-zero codes like 0742
+ * survive as 742), and dedupes while preserving first-seen order.
+ */
 export function parseMccList(input: string): number[] {
   return [
     ...new Set(
@@ -182,6 +188,7 @@ const LABEL_TO_MCC: [RegExp, number[]][] = [
   [/\btravel\b/i, MCC_TRAVEL_BROAD],
 ];
 
+/** MCCs for the first LABEL_TO_MCC pattern matching a category label, or [] when none match. Returns a copy. */
 export function inferMccCodes(label: string): number[] {
   for (const [pattern, codes] of LABEL_TO_MCC) {
     if (pattern.test(label)) return [...codes];
