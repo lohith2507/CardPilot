@@ -39,6 +39,7 @@ function normalizeArtKey(value: string): string {
     .replace(/^-|-$/g, "");
 }
 
+/** Local art path for a catalogue slug (direct match, then alias); null when unknown. */
 export function cardArtForSlug(slug: string | null | undefined): string | null {
   if (!slug) return null;
   const direct = DEMO_CARD_ART_BY_SLUG[slug];
