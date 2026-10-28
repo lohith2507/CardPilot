@@ -38,6 +38,11 @@ export function periodBounds(
   }
 }
 
+/**
+ * Short phrase naming the current cap window for UI copy (e.g. "this month").
+ * Monthly caps read "this statement cycle" when a statement day is set; uncapped
+ * ("none") returns an empty string.
+ */
 export function periodLabel(period: CapPeriod, statementDay?: number | null): string {
   switch (period) {
     case "month":
