@@ -46,6 +46,7 @@ export function writeSnapshot(snapshot: Snapshot): void {
   }
 }
 
+/** Fetches a fresh snapshot from /api/snapshot and caches it; returns null on any failure so callers can fall back to the stored copy. */
 export async function refreshSnapshot(): Promise<Snapshot | null> {
   try {
     const res = await fetch("/api/snapshot", { cache: "no-store" });
